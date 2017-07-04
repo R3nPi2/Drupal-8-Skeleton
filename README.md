@@ -65,7 +65,7 @@ This repository was created based on this article: http://blog.netgloo.com/2016/
 
 For more information and some extra configuration tips read the article.
 
-## Drupal 8 installation
+### Drupal 8 installation
 
 ```
 $ drush pm-download drupal --drupal-project-rename=drupal-8-skeleton
@@ -74,7 +74,7 @@ $ cd drupal-8-skeleton
 $ drush site-install standard --db-url='mysql://d8skeleton:dbSecret1234@localhost/d8skeleton' --account-name=d8Admin --account-pass=secret1234 --site-name="Drupal 8 Skeleton"
 ```
 
-## Drupal 8 configuration
+### Drupal 8 configuration
 
 ```
 $ chmod +w sites/default
