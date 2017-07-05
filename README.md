@@ -193,7 +193,92 @@ Add to `.htaccess` this lines at the begining to protect some files:
 ~$*
 .DS_Store
 
-.sass-cache/
+.sass-cache
 
 .git/hooks/*
+```
+
+## Bootstrap subtheme configuration
+
+```
+$ drush dl bootstrap
+$ cp -a themes/bootstrap/starterkits/sass/ themes/bootstrap_child
+$ mv themes/bootstrap_child/THEMENAME.libraries.yml themes/bootstrap_child/bootstrap_child.libraries.yml
+$ mv themes/bootstrap_child/THEMENAME.starterkit.yml themes/bootstrap_child/bootstrap_child.info.yml
+$ mv themes/bootstrap_child/THEMENAME.theme themes/bootstrap_child/bootstrap_child.theme
+$ mv themes/bootstrap_child/config/install/THEMENAME.settings.yml themes/bootstrap_child/config/install/bootstrap_child.settings.yml
+$ mv themes/bootstrap_child/config/schema/THEMENAME.schema.yml themes/bootstrap_child/config/schema/bootstrap_child.schema.yml 
+```
+
+Edit `themes/bootstrap_child/bootstrap_child.info.yml` like this:
+
+```
+core: 8.x 
+type: theme
+base theme: bootstrap
+
+name: 'Drupal 8 Skeleton Bootstap Subtheme'
+description: 'Uses the Bootstrap framework Sass source files and must be compiled (not for beginners).'
+package: 'Bootstrap'
+
+regions:
+  navigation: 'Navigation'
+  navigation_collapsible: 'Navigation (Collapsible)'
+  header: 'Top Bar'
+  highlighted: 'Highlighted'
+  help: 'Help'
+  content: 'Content'
+  sidebar_first: 'Primary'
+  sidebar_second: 'Secondary'
+  footer: 'Footer'
+  page_top: 'Page top'
+  page_bottom: 'Page bottom'
+
+libraries:
+  - 'bootstrap_child/global-styling'
+  - 'bootstrap_child/bootstrap-scripts'
+```
+
+Edit `themes/bootstrap_child/config/schema/bootstrap_child.schema.yml` like this:
+
+```
+bootstrap_child.settings:
+  type: theme_settings
+  label: 'Drupal 8 Skeleton Bootstrap Subtheme Settings'
+```
+
+Download **bootstrap-sass** package from Github: https://github.com/twbs/bootstrap-sass
+
+Extract **bootstrap-sass** package into `themes/bootstrap_child/bootstrap`
+
+If we dont have **compass sass** installed in our system, we should:
+```
+$ gem update --system
+$ gem install compass sass
+```
+
+or
+```
+$ sudo gem update --system
+$ sudo gem install compass sass
+```
+
+Create and configure compass:
+```
+$ compass create themes/bootstrap_child/ --css-dir=css --sass-dir=scss
+```
+
+Now and on we should _watch_ our sass files when editing for them to be compiled:
+```
+$ compass watch themes/bootstrap_child/
+```
+
+For more information about Drupal 8 SASS theming: https://evolvingweb.ca/blog/setting-sass-compass-your-drupal-8-theme
+
+Enable child theme:
+
+```
+$ drush en bootstrap_child
+$ drush config-set system.theme default bootstrap_child
+$ drush cache-rebuild
 ```

@@ -28,6 +28,6 @@
 ~$*
 .DS_Store
 
-.sass-cache/
+.sass-cache
 
 .git/hooks/*
