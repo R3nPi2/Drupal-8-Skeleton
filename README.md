@@ -1,6 +1,6 @@
 # Drupal 8 Skeleton
 
-This is a Drupal 8 Skeleton (empty) installation based on this article: https://blog.netgloo.com/2016/05/14/configuring-drupal-8-for-a-simple-git-development-workflow/
+This is a Drupal 8 Skeleton (empty) installation with a Bootstrap (sass) Subtheme, based on this article: https://blog.netgloo.com/2016/05/14/configuring-drupal-8-for-a-simple-git-development-workflow/
 
 There are some changes during installation and configuration from the original article.
 
