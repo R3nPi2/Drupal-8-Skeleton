@@ -216,17 +216,12 @@ Add to `.htaccess` this lines at the begining to protect some files:
 /sites/*/settings/settings.local.php
 
 # Ignore paths that contain user-generated content.
-#/sites/*/files/*
+/sites/*/files/*
 #/sites/*/private/*
 #!/sites/*/files/config_*
 
 # Ignore SimpleTest multi-site environment.
 /sites/simpletest
-
-# Ignore paths that contain user-generated content.
-# /sites/*/files/*
-# /sites/*/private/*
-# !/sites/*/files/config_*
 
 # Swap and temporary files
 *.swp
