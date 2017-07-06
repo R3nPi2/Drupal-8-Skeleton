@@ -4,6 +4,48 @@ This is a Drupal 8 Skeleton (empty) installation with a Bootstrap (sass) Subthem
 
 There are some changes during installation and configuration from the original article.
 
+## Install and configure a brand new site from this project
+
+For this example I will install the project in a folder called `www/` on my local machine:
+```
+$ git clone https://github.com/R3nPi2/Drupal-8-Skeleton www/
+$ cd www/
+$ mysql -u root -p -e "CREATE DATABASE myNewProjectDB; GRANT ALL PRIVILEGES ON myNewProjectDB.* TO 'myNewProjectDBUser'@'localhost' IDENTIFIED BY 'myNewProjectDBPassword'"
+$ mysql -u root -p myNewProjectDB < database/exports/d8skeleton-*.sql 
+$ cp sites/example.settings.local.php sites/default/settings/settings.local.php 
+```
+
+Edit `sites/default/settings/settings.local.php` and set DB settings (at the end):
+```
+$databases['default']['default'] = array (
+    'database' => 'myNewProjectDB',
+    'username' => 'myNewProjectDBUser',
+    'password' => 'myNewProjectDBPassword',
+    'prefix' => '', 
+    'host' => 'localhost',
+    'port' => '3306',
+    'namespace' => 'Drupal\\Core\\Database\\Driver\\mysql',
+    'driver' => 'mysql',
+);
+```
+
+Continue installation & configuration:
+```
+$ composer install
+$ drush cset system.site name "My New Project Name"
+$ drush cset system.site email "admin@mynewproject.org"
+$ drush runserver 8000
+```
+
+Now you can use this project credentials to login from your webrowser: http://127.0.0.1:8000/user/login
+
+```
+User: d8Admin
+Password: secret1234
+```
+
+And then you can change username, password, email, etc. going to: http://127.0.0.1:8000/user/1/edit
+
 ## Development workflow
 
 When working on the project the first time we have to:
