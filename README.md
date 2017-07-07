@@ -92,6 +92,11 @@ mysqldump -u root -p --databases DB_NAME > $repo_dir/database/exports/DB_NAME-`d
 git add $repo_dir
 ```
 
+Don't forget to give execution permissions to hook script:
+```
+$ chmod u+x .git/hooks/pre-commit
+```
+
 ### Remote server
 
 File: `.git/hooks/post-merge`
@@ -112,6 +117,11 @@ chown -R $repo_user:$repo_group $repo_dir
 cd $repo_dir
 drush cr
 cd -
+```
+
+Don't forget to give execution permissions to hook script:
+```
+$ chmod u+x .git/hooks/post-merge
 ```
 
 ## This repo creation and configuration
