@@ -46,6 +46,19 @@ Password: secret1234
 
 And then you can change username, password, email, etc. going to: http://127.0.0.1:8000/user/1/edit
 
+### Creating my new project repository
+
+Now I go to Bitbucket in my case and created a new private repository called "My New Project"
+
+Then we have to configure the new repo locally and push it:
+```
+$ cd www/
+$ git remote set-url origin ssh://git@bitbucket.org/r3npi2/my-new-project.git
+$ git add .
+$ git commit -m "First commit"
+$ git push origin master
+```
+
 ## Development workflow
 
 When working on the project the first time we have to:
