@@ -46,7 +46,6 @@ abstract class ImageToolkitBase extends PluginBase implements ImageToolkitInterf
    */
   protected $logger;
 
-
   /**
    * Constructs an ImageToolkitBase object.
    *
@@ -73,7 +72,7 @@ abstract class ImageToolkitBase extends PluginBase implements ImageToolkitInterf
   /**
    * {@inheritdoc}
    */
-  public function validateConfigurationForm(array &$form, FormStateInterface $form_state) {  }
+  public function validateConfigurationForm(array &$form, FormStateInterface $form_state) {}
 
   /**
    * {@inheritdoc}

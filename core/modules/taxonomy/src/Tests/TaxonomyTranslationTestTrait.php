@@ -2,13 +2,18 @@
 
 namespace Drupal\taxonomy\Tests;
 
+@trigger_error(__NAMESPACE__ . '\TaxonomyTranslationTestTrait is deprecated in Drupal 8.4.0 and will be removed before Drupal 9.0.0. Instead, use \Drupal\Tests\taxonomy\Functional\TaxonomyTranslationTestTrait', E_USER_DEPRECATED);
+
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
-use Drupal\field\Tests\EntityReference\EntityReferenceTestTrait;
 use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\language\Entity\ConfigurableLanguage;
+use Drupal\Tests\field\Traits\EntityReferenceTestTrait;
 
 /**
  * Provides common testing base for translated taxonomy terms.
+ *
+ * @deprecated in Drupal 8.4.0 and will be removed before Drupal 9.0.0.
+ *   Use \Drupal\Tests\taxonomy\Functional\TaxonomyTranslationTestTrait
  */
 trait TaxonomyTranslationTestTrait {
 
@@ -17,7 +22,7 @@ trait TaxonomyTranslationTestTrait {
   /**
    * The vocabulary.
    *
-   * @var \Drupal\taxonomy\Entity\Vocabulary;
+   * @var \Drupal\taxonomy\Entity\Vocabulary
    */
   protected $vocabulary;
 
@@ -73,10 +78,6 @@ trait TaxonomyTranslationTestTrait {
 
   /**
    * Adds term reference field for the article content type.
-   *
-   * @param bool $translatable
-   *   (optional) If TRUE, create a translatable term reference field. Defaults
-   *   to FALSE.
    */
   protected function setUpTermReferenceField() {
     $handler_settings = [

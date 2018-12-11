@@ -65,7 +65,7 @@ class SystemMenuBlockTest extends KernelTestBase {
   /**
    * The menu link plugin manager service.
    *
-   * @var \Drupal\Core\Menu\MenuLinkManagerInterface $menuLinkManager
+   * @var \Drupal\Core\Menu\MenuLinkManagerInterface
    */
   protected $menuLinkManager;
 
@@ -162,13 +162,13 @@ class SystemMenuBlockTest extends KernelTestBase {
     $dependencies = $block->calculateDependencies()->getDependencies();
     $expected = [
       'config' => [
-        'system.menu.' . $this->menu->id()
+        'system.menu.' . $this->menu->id(),
       ],
       'module' => [
-        'system'
+        'system',
       ],
       'theme' => [
-        'stark'
+        'stark',
       ],
     ];
     $this->assertIdentical($expected, $dependencies);
@@ -218,9 +218,7 @@ class SystemMenuBlockTest extends KernelTestBase {
       'test.example6' => [],
       'test.example8' => [],
     ];
-    $no_active_trail_expectations['level_2_only'] = [
-      'test.example7' => [],
-    ];
+    $no_active_trail_expectations['level_2_only'] = [];
     $no_active_trail_expectations['level_3_only'] = [];
     $no_active_trail_expectations['level_1_and_beyond'] = $no_active_trail_expectations['all'];
     $no_active_trail_expectations['level_2_and_beyond'] = $no_active_trail_expectations['level_2_only'];
@@ -249,7 +247,7 @@ class SystemMenuBlockTest extends KernelTestBase {
       'test.example2' => [
         'test.example3' => [
           'test.example4' => [],
-        ]
+        ],
       ],
       'test.example5' => [
         'test.example7' => [],
@@ -266,7 +264,6 @@ class SystemMenuBlockTest extends KernelTestBase {
     ];
     $active_trail_expectations['level_2_only'] = [
       'test.example3' => [],
-      'test.example7' => [],
     ];
     $active_trail_expectations['level_3_only'] = [
       'test.example4' => [],
@@ -276,7 +273,6 @@ class SystemMenuBlockTest extends KernelTestBase {
       'test.example3' => [
         'test.example4' => [],
       ],
-      'test.example7' => [],
     ];
     $active_trail_expectations['level_3_and_beyond'] = $active_trail_expectations['level_3_only'];
     foreach ($blocks as $id => $block) {

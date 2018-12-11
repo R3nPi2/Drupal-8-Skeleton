@@ -5,6 +5,7 @@ namespace Drupal\search\Controller;
 use Drupal\Core\Cache\CacheableDependencyInterface;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Render\RendererInterface;
+use Drupal\search\Form\SearchPageForm;
 use Drupal\search\SearchPageInterface;
 use Drupal\search\SearchPageRepositoryInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -84,7 +85,7 @@ class SearchController extends ControllerBase {
     }
 
     $build['#title'] = $plugin->suggestedTitle();
-    $build['search_form'] = $this->entityFormBuilder()->getForm($entity, 'search');
+    $build['search_form'] = $this->formBuilder()->getForm(SearchPageForm::class, $entity);
 
     // Build search results, if keywords or other search parameters are in the
     // GET parameters. Note that we need to try the search if 'keys' is in
@@ -103,7 +104,7 @@ class SearchController extends ControllerBase {
       else {
         // The search not being executable means that no keywords or other
         // conditions were entered.
-        drupal_set_message($this->t('Please enter some keywords.'), 'error');
+        $this->messenger()->addError($this->t('Please enter some keywords.'));
       }
     }
 
@@ -148,8 +149,6 @@ class SearchController extends ControllerBase {
   /**
    * Creates a render array for the search help page.
    *
-   * @param \Symfony\Component\HttpFoundation\Request $request
-   *   The request object.
    * @param \Drupal\search\SearchPageInterface $entity
    *   The search page entity.
    *
@@ -207,10 +206,10 @@ class SearchController extends ControllerBase {
     $search_page->$op()->save();
 
     if ($op == 'enable') {
-      drupal_set_message($this->t('The %label search page has been enabled.', ['%label' => $search_page->label()]));
+      $this->messenger()->addStatus($this->t('The %label search page has been enabled.', ['%label' => $search_page->label()]));
     }
     elseif ($op == 'disable') {
-      drupal_set_message($this->t('The %label search page has been disabled.', ['%label' => $search_page->label()]));
+      $this->messenger()->addStatus($this->t('The %label search page has been disabled.', ['%label' => $search_page->label()]));
     }
 
     $url = $search_page->urlInfo('collection');
@@ -230,7 +229,7 @@ class SearchController extends ControllerBase {
     // Set the default page to this search page.
     $this->searchPageRepository->setDefaultSearchPage($search_page);
 
-    drupal_set_message($this->t('The default search page is now %label. Be sure to check the ordering of your search pages.', ['%label' => $search_page->label()]));
+    $this->messenger()->addStatus($this->t('The default search page is now %label. Be sure to check the ordering of your search pages.', ['%label' => $search_page->label()]));
     return $this->redirect('entity.search_page.collection');
   }
 

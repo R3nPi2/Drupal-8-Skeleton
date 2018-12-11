@@ -7,7 +7,7 @@ use Drupal\block_content\Entity\BlockContentType;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Language\LanguageInterface;
-use Drupal\system\Tests\Entity\EntityCacheTagsTestBase;
+use Drupal\Tests\system\Functional\Entity\EntityCacheTagsTestBase;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
@@ -29,7 +29,7 @@ class BlockContentCacheTagsTest extends EntityCacheTagsTestBase {
     $block_content_type = BlockContentType::create([
       'id' => 'basic',
       'label' => 'basic',
-      'revision' => FALSE
+      'revision' => FALSE,
     ]);
     $block_content_type->save();
     block_content_add_body_field($block_content_type->id());
@@ -76,7 +76,7 @@ class BlockContentCacheTagsTest extends EntityCacheTagsTestBase {
     // Render the block.
     // @todo The request stack manipulation won't be necessary once
     //   https://www.drupal.org/node/2367555 is fixed and the
-    //   corresponding $request->isMethodSafe() checks are removed from
+    //   corresponding $request->isMethodCacheable() checks are removed from
     //   Drupal\Core\Render\Renderer.
     $request_stack = $this->container->get('request_stack');
     $request_stack->push(new Request());

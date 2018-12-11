@@ -10,7 +10,6 @@
 
 use Drupal\Core\Breadcrumb\Breadcrumb;
 use Drupal\Core\Cache\CacheableMetadata;
-use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Block\BlockPluginInterface;
 use Drupal\Core\Link;
 use Drupal\Core\Menu\MenuLinkInterface;
@@ -27,6 +26,8 @@ use Drupal\node\NodeInterface;
  * @deprecated in Drupal 8.3.x and will be removed before Drupal 9.0.0. Use
  *   \Drupal\Core\Config\Entity\ConfigEntityStorage::MAX_ID_LENGTH because the
  *   menu name is a configuration entity ID.
+ *
+ * @see https://www.drupal.org/node/2831620
  */
 const MENU_MAX_MENU_NAME_LENGTH_UI = 27;
 
@@ -71,49 +72,9 @@ function menu_ui_entity_type_build(array &$entity_types) {
     ->setLinkTemplate('edit-form', '/admin/structure/menu/manage/{menu}')
     ->setLinkTemplate('add-link-form', '/admin/structure/menu/manage/{menu}/add')
     ->setLinkTemplate('collection', '/admin/structure/menu');
-}
 
-/**
- * Implements hook_ENTITY_TYPE_insert( for menu entities.
- */
-function menu_ui_menu_insert(Menu $menu) {
-  menu_cache_clear_all();
-  // Invalidate the block cache to update menu-based derivatives.
-  if (\Drupal::moduleHandler()->moduleExists('block')) {
-    \Drupal::service('plugin.manager.block')->clearCachedDefinitions();
-  }
-}
-
-/**
- * Implements hook_ENTITY_TYPE_update() for menu entities.
- */
-function menu_ui_menu_update(Menu $menu) {
-  menu_cache_clear_all();
-  // Invalidate the block cache to update menu-based derivatives.
-  if (\Drupal::moduleHandler()->moduleExists('block')) {
-    \Drupal::service('plugin.manager.block')->clearCachedDefinitions();
-  }
-}
-
-/**
- * Implements hook_ENTITY_TYPE_predelete() for menu entities.
- */
-function menu_ui_menu_predelete(Menu $menu) {
-  // Delete all links from the menu.
-  /** @var \Drupal\Core\Menu\MenuLinkManagerInterface $menu_link_manager */
-  $menu_link_manager = \Drupal::service('plugin.manager.menu.link');
-  $menu_link_manager->deleteLinksInMenu($menu->id());
-}
-
-/**
- * Implements hook_ENTITY_TYPE_delete() for menu entities.
- */
-function menu_ui_menu_delete(Menu $menu) {
-  menu_cache_clear_all();
-
-  // Invalidate the block cache to update menu-based derivatives.
-  if (\Drupal::moduleHandler()->moduleExists('block')) {
-    \Drupal::service('plugin.manager.block')->clearCachedDefinitions();
+  if (isset($entity_types['node'])) {
+    $entity_types['node']->addConstraint('MenuSettings', []);
   }
 }
 
@@ -167,24 +128,6 @@ function _menu_ui_node_save(NodeInterface $node, array $values) {
 }
 
 /**
- * Implements hook_ENTITY_TYPE_predelete() for node entities.
- */
-function menu_ui_node_predelete(EntityInterface $node) {
-  // Delete all MenuLinkContent links that point to this node.
-  /** @var \Drupal\Core\Menu\MenuLinkManagerInterface $menu_link_manager */
-  $menu_link_manager = \Drupal::service('plugin.manager.menu.link');
-  $result = $menu_link_manager->loadLinksByRoute('entity.node.canonical', ['node' => $node->id()]);
-
-  if (!empty($result)) {
-    foreach ($result as $id => $instance) {
-      if ($instance->isDeletable() && strpos($id, 'menu_link_content:') === 0) {
-        $instance->deleteLink();
-      }
-    }
-  }
-}
-
-/**
  * Returns the definition for a menu link for the given node.
  *
  * @param \Drupal\node\NodeInterface $node
@@ -233,6 +176,7 @@ function menu_ui_get_menu_link_defaults(NodeInterface $node) {
         'title' => $menu_link->getTitle(),
         'title_max_length' => $menu_link->getFieldDefinitions()['title']->getSetting('max_length'),
         'description' => $menu_link->getDescription(),
+        'description_max_length' => $menu_link->getFieldDefinitions()['description']->getSetting('max_length'),
         'menu_name' => $menu_link->getMenuName(),
         'parent' => $menu_link->getParentId(),
         'weight' => $menu_link->getWeight(),
@@ -245,12 +189,14 @@ function menu_ui_get_menu_link_defaults(NodeInterface $node) {
     // definition.
     $field_definitions = \Drupal::entityManager()->getBaseFieldDefinitions('menu_link_content');
     $max_length = $field_definitions['title']->getSetting('max_length');
+    $description_max_length = $field_definitions['description']->getSetting('max_length');
     $defaults = [
       'entity_id' => 0,
       'id' => '',
       'title' => '',
       'title_max_length' => $max_length,
       'description' => '',
+      'description_max_length' => $description_max_length,
       'menu_name' => $menu_name,
       'parent' => '',
       'weight' => 0,
@@ -275,11 +221,15 @@ function menu_ui_form_node_form_alter(&$form, FormStateInterface $form_state) {
   $node_type = $node->type->entity;
   /** @var \Drupal\Core\Menu\MenuParentFormSelectorInterface $menu_parent_selector */
   $menu_parent_selector = \Drupal::service('menu.parent_form_selector');
-  $menu_names = menu_ui_get_menus();
-  $type_menus = $node_type->getThirdPartySetting('menu_ui', 'available_menus', ['main']);
+  $type_menus_ids = $node_type->getThirdPartySetting('menu_ui', 'available_menus', ['main']);
+  if (empty($type_menus_ids)) {
+    return;
+  }
+  /** @var \Drupal\system\MenuInterface[] $type_menus */
+  $type_menus = Menu::loadMultiple($type_menus_ids);
   $available_menus = [];
   foreach ($type_menus as $menu) {
-    $available_menus[$menu] = $menu_names[$menu];
+    $available_menus[$menu->id()] = $menu->label();
   }
   if ($defaults['id']) {
     $default = $defaults['menu_name'] . ':' . $defaults['parent'];
@@ -334,11 +284,11 @@ function menu_ui_form_node_form_alter(&$form, FormStateInterface $form_state) {
   ];
 
   $form['menu']['link']['description'] = [
-    '#type' => 'textarea',
+    '#type' => 'textfield',
     '#title' => t('Description'),
     '#default_value' => $defaults['description'],
-    '#rows' => 1,
     '#description' => t('Shown when hovering over the menu link.'),
+    '#maxlength' => $defaults['description_max_length'],
   ];
 
   $form['menu']['link']['menu_parent'] = $parent_element;
@@ -357,6 +307,15 @@ function menu_ui_form_node_form_alter(&$form, FormStateInterface $form_state) {
       $form['actions'][$action]['#submit'][] = 'menu_ui_form_node_form_submit';
     }
   }
+
+  $form['#entity_builders'][] = 'menu_ui_node_builder';
+}
+
+/**
+ * Entity form builder to add the menu information to the node.
+ */
+function menu_ui_node_builder($entity_type, NodeInterface $entity, &$form, FormStateInterface $form_state) {
+  $entity->menu = $form_state->getValue('menu');
 }
 
 /**
@@ -499,7 +458,6 @@ function menu_ui_preprocess_block(&$variables) {
     $variables['attributes']['role'] = 'navigation';
   }
 }
-
 
 /**
  * Implements hook_system_breadcrumb_alter().

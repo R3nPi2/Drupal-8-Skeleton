@@ -2,6 +2,8 @@
 
 namespace Drupal\file\Tests;
 
+@trigger_error('The ' . __NAMESPACE__ . '\FileFieldTestBase is deprecated in Drupal 8.5.x and will be removed before Drupal 9.0.0. Instead, use \Drupal\Tests\file\Functional\FileFieldTestBase. See https://www.drupal.org/node/2969361.', E_USER_DEPRECATED);
+
 use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\file\FileInterface;
@@ -227,7 +229,7 @@ abstract class FileFieldTestBase extends WebTestBase {
         $edit[$name][] = $file_path;
       }
     }
-    $this->drupalPostForm("node/$nid/edit", $edit, t('Save and keep published'));
+    $this->drupalPostForm("node/$nid/edit", $edit, t('Save'));
 
     return $nid;
   }
@@ -243,7 +245,7 @@ abstract class FileFieldTestBase extends WebTestBase {
     ];
 
     $this->drupalPostForm('node/' . $nid . '/edit', [], t('Remove'));
-    $this->drupalPostForm(NULL, $edit, t('Save and keep published'));
+    $this->drupalPostForm(NULL, $edit, t('Save'));
   }
 
   /**
@@ -251,12 +253,12 @@ abstract class FileFieldTestBase extends WebTestBase {
    */
   public function replaceNodeFile($file, $field_name, $nid, $new_revision = TRUE) {
     $edit = [
-      'files[' . $field_name . '_0]' => drupal_realpath($file->getFileUri()),
+      'files[' . $field_name . '_0]' => \Drupal::service('file_system')->realpath($file->getFileUri()),
       'revision' => (string) (int) $new_revision,
     ];
 
     $this->drupalPostForm('node/' . $nid . '/edit', [], t('Remove'));
-    $this->drupalPostForm(NULL, $edit, t('Save and keep published'));
+    $this->drupalPostForm(NULL, $edit, t('Save'));
   }
 
   /**

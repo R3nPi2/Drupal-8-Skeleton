@@ -2,8 +2,11 @@
 
 namespace Drupal\taxonomy\Tests;
 
-use Drupal\field\Tests\EntityReference\EntityReferenceTestTrait;
+@trigger_error(__NAMESPACE__ . '\TaxonomyTestBase is deprecated in Drupal 8.4.0 and will be removed before Drupal 9.0.0. Instead, use \Drupal\Tests\taxonomy\Functional\TaxonomyTestBase', E_USER_DEPRECATED);
+
 use Drupal\simpletest\WebTestBase;
+use Drupal\Tests\field\Traits\EntityReferenceTestTrait;
+use Drupal\Tests\taxonomy\Functional\TaxonomyTestTrait;
 
 /**
  * Provides common helper methods for Taxonomy module tests.

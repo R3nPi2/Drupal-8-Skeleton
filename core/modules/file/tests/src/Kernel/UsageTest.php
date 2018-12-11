@@ -15,6 +15,7 @@ use Drupal\node\Entity\NodeType;
  * @group file
  */
 class UsageTest extends FileManagedUnitTestBase {
+
   /**
    * Tests \Drupal\file\FileUsage\DatabaseFileUsageBackend::listUsage().
    */
@@ -26,7 +27,7 @@ class UsageTest extends FileManagedUnitTestBase {
         'module' => 'testing',
         'type' => 'foo',
         'id' => 1,
-        'count' => 1
+        'count' => 1,
       ])
       ->execute();
     db_insert('file_usage')
@@ -35,7 +36,7 @@ class UsageTest extends FileManagedUnitTestBase {
         'module' => 'testing',
         'type' => 'bar',
         'id' => 2,
-        'count' => 2
+        'count' => 2,
       ])
       ->execute();
 
@@ -75,10 +76,33 @@ class UsageTest extends FileManagedUnitTestBase {
   }
 
   /**
+   * Tests file usage deletion when files are made temporary.
+   */
+  public function testRemoveUsageTemporary() {
+    $this->config('file.settings')
+      ->set('make_unused_managed_files_temporary', TRUE)
+      ->save();
+    $file = $this->doTestRemoveUsage();
+    $this->assertTrue($file->isTemporary());
+  }
+
+  /**
+   * Tests file usage deletion when files are made temporary.
+   */
+  public function testRemoveUsageNonTemporary() {
+    $this->config('file.settings')
+      ->set('make_unused_managed_files_temporary', FALSE)
+      ->save();
+    $file = $this->doTestRemoveUsage();
+    $this->assertFalse($file->isTemporary());
+  }
+
+  /**
    * Tests \Drupal\file\FileUsage\DatabaseFileUsageBackend::delete().
    */
-  public function testRemoveUsage() {
+  public function doTestRemoveUsage() {
     $file = $this->createFile();
+    $file->setPermanent();
     $file_usage = $this->container->get('file.usage');
     db_insert('file_usage')
       ->fields([
@@ -116,6 +140,7 @@ class UsageTest extends FileManagedUnitTestBase {
       ->execute()
       ->fetchField();
     $this->assertIdentical(FALSE, $count, 'Decrementing non-exist record complete.');
+    return $file;
   }
 
   /**

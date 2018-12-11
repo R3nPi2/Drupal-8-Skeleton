@@ -3,9 +3,15 @@
 add-form:
   uri: https://drupal.org/link-relations/add-form
   description: A form where a resource of this type can be created.
+add-page:
+  uri: https://drupal.org/link-relations/add-page
+  description: A page where a resource of this type and related types can be created.
 delete-form:
   uri: https://drupal.org/link-relations/delete-form
   description: A form where a resource of this type can be deleted.
+delete-multiple-form:
+  uri: https://drupal.org/link-relations/delete-multiple-form
+  description: A form where multiple resources of this type can be deleted.
 revision:
   uri: https://drupal.org/link-relations/revision
   description: A particular version of this resource.
@@ -33,6 +39,9 @@ cancel-form:
 flush-form:
   uri: https://drupal.org/link-relations/flush-form
   description: A form where a resource of this type can be flushed.
+duplicate-form:
+  uri: https://drupal.org/link-relations/duplicate-form
+  description: A form where a resource of this type can be duplicated.
 
 # All registered relation types.
 # See https://tools.ietf.org/html/rfc5988#section-4.1.

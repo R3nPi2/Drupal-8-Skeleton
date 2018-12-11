@@ -3,7 +3,9 @@
 namespace Drupal\Tests\content_moderation\Functional;
 
 use Drupal\Core\Session\AccountInterface;
+use Drupal\node\Entity\NodeType;
 use Drupal\Tests\BrowserTestBase;
+use Drupal\Tests\content_moderation\Traits\ContentModerationTestTrait;
 use Drupal\user\Entity\Role;
 
 /**
@@ -11,8 +13,12 @@ use Drupal\user\Entity\Role;
  */
 abstract class ModerationStateTestBase extends BrowserTestBase {
 
+  use ContentModerationTestTrait;
+
   /**
    * Profile to use.
+   *
+   * @var string
    */
   protected $profile = 'testing';
 
@@ -29,7 +35,7 @@ abstract class ModerationStateTestBase extends BrowserTestBase {
    * @var array
    */
   protected $permissions = [
-    'administer content moderation',
+    'administer workflows',
     'access administration pages',
     'administer content types',
     'administer nodes',
@@ -38,7 +44,17 @@ abstract class ModerationStateTestBase extends BrowserTestBase {
     'access content overview',
     'use editorial transition create_new_draft',
     'use editorial transition publish',
+    'use editorial transition archive',
+    'use editorial transition archived_draft',
+    'use editorial transition archived_published',
   ];
+
+  /**
+   * The editorial workflow entity.
+   *
+   * @var \Drupal\workflows\Entity\Workflow
+   */
+  protected $workflow;
 
   /**
    * Modules to enable.
@@ -58,6 +74,7 @@ abstract class ModerationStateTestBase extends BrowserTestBase {
    */
   protected function setUp() {
     parent::setUp();
+    $this->workflow = $this->createEditorialWorkflow();
     $this->adminUser = $this->drupalCreateUser($this->permissions);
     $this->drupalPlaceBlock('local_tasks_block', ['id' => 'tabs_block']);
     $this->drupalPlaceBlock('page_title_block');
@@ -94,11 +111,19 @@ abstract class ModerationStateTestBase extends BrowserTestBase {
   protected function createContentTypeFromUi($content_type_name, $content_type_id, $moderated = FALSE, $workflow_id = 'editorial') {
     $this->drupalGet('admin/structure/types');
     $this->clickLink('Add content type');
+
+    // Check that the 'Create new revision' checkbox is checked and disabled.
+    $this->assertSession()->checkboxChecked('options[revision]');
+    $this->assertSession()->fieldDisabled('options[revision]');
+
     $edit = [
       'name' => $content_type_name,
       'type' => $content_type_id,
     ];
     $this->drupalPostForm(NULL, $edit, t('Save content type'));
+
+    // Check the content type has been set to create new revisions.
+    $this->assertTrue(NodeType::load($content_type_id)->isNewRevision());
 
     if ($moderated) {
       $this->enableModerationThroughUi($content_type_id, $workflow_id);
@@ -113,13 +138,18 @@ abstract class ModerationStateTestBase extends BrowserTestBase {
    * @param string $workflow_id
    *   The workflow to attach to the bundle.
    */
-  protected function enableModerationThroughUi($content_type_id, $workflow_id = 'editorial') {
-    $edit['workflow'] = $workflow_id;
-    $this->drupalPostForm('admin/structure/types/manage/' . $content_type_id . '/moderation', $edit, t('Save'));
+  public function enableModerationThroughUi($content_type_id, $workflow_id = 'editorial') {
+    $this->drupalGet('/admin/config/workflow/workflows');
+    $this->assertLinkByHref('admin/config/workflow/workflows/manage/' . $workflow_id);
+    $edit['bundles[' . $content_type_id . ']'] = TRUE;
+    $this->drupalPostForm('admin/config/workflow/workflows/manage/' . $workflow_id . '/type/node', $edit, t('Save'));
     // Ensure the parent environment is up-to-date.
     // @see content_moderation_workflow_insert()
     \Drupal::service('entity_type.bundle.info')->clearCachedBundles();
     \Drupal::service('entity_field.manager')->clearCachedFieldDefinitions();
+    /** @var \Drupal\Core\Routing\RouteBuilderInterface $router_builder */
+    $router_builder = $this->container->get('router.builder');
+    $router_builder->rebuildIfNeeded();
   }
 
   /**

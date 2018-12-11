@@ -2,7 +2,7 @@
 
 namespace Drupal\Tests\views\Functional\Plugin;
 
-use Drupal\system\Tests\Cache\AssertPageCacheContextsAndTagsTrait;
+use Drupal\Tests\system\Functional\Cache\AssertPageCacheContextsAndTagsTrait;
 use Drupal\Tests\views\Functional\ViewTestBase;
 use Drupal\views\Plugin\views\display\DisplayPluginBase;
 use Drupal\views\Views;
@@ -51,8 +51,8 @@ class CacheWebTest extends ViewTestBase {
       'type' => 'time',
       'options' => [
         'results_lifespan' => '3600',
-        'output_lifespan' => '3600'
-      ]
+        'output_lifespan' => '3600',
+      ],
     ]);
     $view->save();
     $this->container->get('router.builder')->rebuildIfNeeded();
@@ -70,7 +70,7 @@ class CacheWebTest extends ViewTestBase {
       'config:user.role.anonymous',
       'config:views.view.test_display',
       'node_list',
-      'rendered'
+      'rendered',
     ];
     $this->assertCacheTags($cache_tags);
 

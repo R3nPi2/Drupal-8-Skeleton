@@ -2,6 +2,8 @@
 
 namespace Drupal\views\Plugin\views\display;
 
+use Drupal\Core\Database\Query\Condition;
+
 /**
  * The plugin that handles an EntityReference display.
  *
@@ -52,9 +54,6 @@ class EntityReference extends DisplayPluginBase {
     $options['row']['contains']['type'] = ['default' => 'entity_reference'];
     $options['defaults']['default']['row'] = FALSE;
 
-    // Make sure the query is not cached.
-    $options['defaults']['default']['cache'] = FALSE;
-
     // Set the display title to an empty string (not used in this display type).
     $options['title']['default'] = '';
     $options['defaults']['default']['title'] = FALSE;
@@ -63,13 +62,12 @@ class EntityReference extends DisplayPluginBase {
   }
 
   /**
-   * Overrides \Drupal\views\Plugin\views\display\DisplayPluginBase::optionsSummary().
-   *
-   * Disable 'cache' and 'title' so it won't be changed.
+   * {@inheritdoc}
    */
   public function optionsSummary(&$categories, &$options) {
     parent::optionsSummary($categories, $options);
-    unset($options['query']);
+    // Disable 'title' so it won't be changed from the default set in
+    // \Drupal\views\Plugin\views\display\EntityReference::defineOptions.
     unset($options['title']);
   }
 
@@ -88,13 +86,16 @@ class EntityReference extends DisplayPluginBase {
   }
 
   /**
-   * {@inheritdoc}
+   * Builds the view result as a renderable array.
+   *
+   * @return array
+   *   Renderable array or empty array.
    */
   public function render() {
     if (!empty($this->view->result) && $this->view->style_plugin->evenEmpty()) {
       return $this->view->style_plugin->render($this->view->result);
     }
-    return '';
+    return [];
   }
 
   /**
@@ -131,7 +132,7 @@ class EntityReference extends DisplayPluginBase {
       }
 
       // Multiple search fields are OR'd together.
-      $conditions = db_or();
+      $conditions = new Condition('OR');
 
       // Build the condition using the selected search fields.
       foreach ($style_options['options']['search_fields'] as $field_id) {

@@ -2,6 +2,7 @@
 
 namespace Drupal\image\Form;
 
+use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
@@ -11,6 +12,8 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Controller for image style edit form.
+ *
+ * @internal
  */
 class ImageStyleEditForm extends ImageStyleFormBase {
 
@@ -58,7 +61,7 @@ class ImageStyleEditForm extends ImageStyleFormBase {
     $form['preview'] = [
       '#type' => 'item',
       '#title' => $this->t('Preview'),
-      '#markup' => drupal_render($preview_arguments),
+      '#markup' => \Drupal::service('renderer')->render($preview_arguments),
       // Render preview above parent elements.
       '#weight' => -5,
     ];
@@ -143,7 +146,7 @@ class ImageStyleEditForm extends ImageStyleFormBase {
     $new_effect_options = [];
     $effects = $this->imageEffectManager->getDefinitions();
     uasort($effects, function ($a, $b) {
-      return strcasecmp($a['id'], $b['id']);
+      return Unicode::strcasecmp($a['label'], $b['label']);
     });
     foreach ($effects as $effect => $definition) {
       $new_effect_options[$effect] = $definition['label'];
@@ -228,7 +231,7 @@ class ImageStyleEditForm extends ImageStyleFormBase {
       $effect_id = $this->entity->addImageEffect($effect);
       $this->entity->save();
       if (!empty($effect_id)) {
-        drupal_set_message($this->t('The image effect was successfully applied.'));
+        $this->messenger()->addStatus($this->t('The image effect was successfully applied.'));
       }
     }
   }
@@ -251,17 +254,7 @@ class ImageStyleEditForm extends ImageStyleFormBase {
    */
   public function save(array $form, FormStateInterface $form_state) {
     parent::save($form, $form_state);
-    drupal_set_message($this->t('Changes to the style have been saved.'));
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function actions(array $form, FormStateInterface $form_state) {
-    $actions = parent::actions($form, $form_state);
-    $actions['submit']['#value'] = $this->t('Update style');
-
-    return $actions;
+    $this->messenger()->addStatus($this->t('Changes to the style have been saved.'));
   }
 
   /**

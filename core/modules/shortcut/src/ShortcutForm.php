@@ -7,6 +7,8 @@ use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Form handler for the shortcut entity forms.
+ *
+ * @internal
  */
 class ShortcutForm extends ContentEntityForm {
 
@@ -16,6 +18,16 @@ class ShortcutForm extends ContentEntityForm {
    * @var \Drupal\shortcut\ShortcutInterface
    */
   protected $entity;
+
+  /**
+   * {@inheritdoc}
+   */
+  public function form(array $form, FormStateInterface $form_state) {
+    $form = parent::form($form, $form_state);
+    $form['#attached']['library'][] = 'core/drupal.form';
+
+    return $form;
+  }
 
   /**
    * {@inheritdoc}
@@ -40,7 +52,7 @@ class ShortcutForm extends ContentEntityForm {
     else {
       $message = $this->t('Added a shortcut for %title.', ['%title' => $view_link]);
     }
-    drupal_set_message($message);
+    $this->messenger()->addStatus($message);
 
     $form_state->setRedirect(
       'entity.shortcut_set.customize_form',

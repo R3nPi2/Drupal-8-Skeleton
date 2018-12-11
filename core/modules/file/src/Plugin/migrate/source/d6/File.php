@@ -9,7 +9,8 @@ use Drupal\migrate_drupal\Plugin\migrate\source\DrupalSqlBase;
  * Drupal 6 file source from database.
  *
  * @MigrateSource(
- *   id = "d6_file"
+ *   id = "d6_file",
+ *   source_module = "system"
  * )
  */
 class File extends DrupalSqlBase {
@@ -41,6 +42,7 @@ class File extends DrupalSqlBase {
   public function query() {
     return $this->select('files', 'f')
       ->fields('f')
+      ->condition('filepath', '/tmp%', 'NOT LIKE')
       ->orderBy('timestamp')
       // If two or more files have the same timestamp, they'll end up in a
       // non-deterministic order. Ordering by fid (or any other unique field)
@@ -87,6 +89,7 @@ class File extends DrupalSqlBase {
       'is_public' => $this->t('TRUE if the files directory is public otherwise FALSE.'),
     ];
   }
+
   /**
    * {@inheritdoc}
    */

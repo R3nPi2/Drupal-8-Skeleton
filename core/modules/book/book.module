@@ -82,7 +82,8 @@ function book_entity_type_build(array &$entity_types) {
   $entity_types['node']
     ->setFormClass('book_outline', 'Drupal\book\Form\BookOutlineForm')
     ->setLinkTemplate('book-outline-form', '/node/{node}/outline')
-    ->setLinkTemplate('book-remove-form', '/node/{node}/outline/remove');
+    ->setLinkTemplate('book-remove-form', '/node/{node}/outline/remove')
+    ->addConstraint('BookOutline', []);
 }
 
 /**
@@ -110,7 +111,7 @@ function book_node_links_alter(array &$links, NodeInterface $node, array &$conte
               'type' => 'html',
               'node' => $node->id(),
             ]),
-            'attributes' => ['title' => t('Show a printer-friendly version of this book page and its sub-pages.')]
+            'attributes' => ['title' => t('Show a printer-friendly version of this book page and its sub-pages.')],
           ];
         }
       }
@@ -437,7 +438,7 @@ function template_preprocess_book_navigation(&$variables) {
   }
 
   if (!empty($build)) {
-    drupal_render($build);
+    \Drupal::service('renderer')->render($build);
   }
 
   $variables['has_links'] = FALSE;
@@ -536,5 +537,18 @@ function book_node_type_update(NodeTypeInterface $type) {
       $config->set('child_type', $type->id());
     }
     $config->save();
+  }
+}
+
+/**
+ * Implements hook_migration_plugins_alter().
+ */
+function book_migration_plugins_alter(array &$migrations) {
+  // Book settings are migrated identically for Drupal 6 and Drupal 7. However,
+  // a d6_book_settings migration already existed before the consolidated
+  // book_settings migration existed, so to maintain backwards compatibility,
+  // ensure that d6_book_settings is an alias of book_settings.
+  if (isset($migrations['book_settings'])) {
+    $migrations['d6_book_settings'] = &$migrations['book_settings'];
   }
 }

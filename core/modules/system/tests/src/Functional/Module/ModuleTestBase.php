@@ -56,8 +56,9 @@ abstract class ModuleTestBase extends BrowserTestBase {
   public function assertModuleTablesExist($module) {
     $tables = array_keys(drupal_get_module_schema($module));
     $tables_exist = TRUE;
+    $schema = Database::getConnection()->schema();
     foreach ($tables as $table) {
-      if (!db_table_exists($table)) {
+      if (!$schema->tableExists($table)) {
         $tables_exist = FALSE;
       }
     }
@@ -73,8 +74,9 @@ abstract class ModuleTestBase extends BrowserTestBase {
   public function assertModuleTablesDoNotExist($module) {
     $tables = array_keys(drupal_get_module_schema($module));
     $tables_exist = FALSE;
+    $schema = Database::getConnection()->schema();
     foreach ($tables as $table) {
-      if (db_table_exists($table)) {
+      if ($schema->tableExists($table)) {
         $tables_exist = TRUE;
       }
     }
@@ -87,8 +89,10 @@ abstract class ModuleTestBase extends BrowserTestBase {
    * @param string $module
    *   The name of the module.
    *
-   * @return bool
-   *   TRUE if configuration has been installed, FALSE otherwise.
+   * @return bool|null
+   *   TRUE if configuration has been installed, FALSE otherwise. Returns NULL
+   *   if the module configuration directory does not exist or does not contain
+   *   any configuration files.
    */
   public function assertModuleConfig($module) {
     $module_config_dir = drupal_get_path('module', $module) . '/' . InstallStorage::CONFIG_INSTALL_DIRECTORY;
@@ -107,16 +111,18 @@ abstract class ModuleTestBase extends BrowserTestBase {
     }
     $this->assertTrue($all_names);
 
+    $module_config_dependencies = \Drupal::service('config.manager')->findConfigEntityDependents('module', [$module]);
     // Look up each default configuration object name in the active
     // configuration, and if it exists, remove it from the stack.
-    // Only default config that belongs to $module is guaranteed to exist; any
-    // other default config depends on whether other modules are enabled. Thus,
-    // list all default config once more, but filtered by $module.
-    $names = $module_file_storage->listAll($module . '.');
+    $names = $module_file_storage->listAll();
     foreach ($names as $key => $name) {
       if ($this->config($name)->get()) {
         unset($names[$key]);
       }
+      // All configuration in a module's config/install directory should depend
+      // on the module as it must be removed on uninstall or the module will not
+      // be re-installable.
+      $this->assertTrue(strpos($name, $module . '.') === 0 || isset($module_config_dependencies[$name]), "Configuration $name provided by $module in its config/install directory does not depend on it.");
     }
     // Verify that all configuration has been installed (which means that $names
     // is empty).

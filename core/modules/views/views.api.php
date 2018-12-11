@@ -544,11 +544,11 @@ function hook_field_views_data(\Drupal\field\FieldStorageConfigInterface $field_
  * default data that views_field_default_views_data() supplies for the
  * field storage.
  *
- *  @param array $data
- *    The views data for the field storage. This has the same format as the
- *    return value of hook_views_data().
- *  @param \Drupal\field\FieldStorageConfigInterface $field_storage
- *    The field storage config entity.
+ * @param array $data
+ *   The views data for the field storage. This has the same format as the
+ *   return value of hook_views_data().
+ * @param \Drupal\field\FieldStorageConfigInterface $field_storage
+ *   The field storage config entity.
  *
  * @see views_views_data()
  * @see hook_field_views_data()
@@ -771,7 +771,7 @@ function hook_views_pre_execute(ViewExecutable $view) {
   $account = \Drupal::currentUser();
 
   if (count($view->query->tables) > 2 && $account->hasPermission('administer views')) {
-    drupal_set_message(t('The view %view may be heavy to execute.', ['%view' => $view->id()]), 'warning');
+    \Drupal::messenger()->addWarning(t('The view %view may be heavy to execute.', ['%view' => $view->id()]));
   }
 }
 
@@ -795,7 +795,7 @@ function hook_views_post_execute(ViewExecutable $view) {
   // (This action could be performed later in the execution process, but not
   // earlier.)
   if ($view->total_rows > 100) {
-    drupal_set_message(t('You have more than 100 hits. Use the filter settings to narrow down your list.'));
+    \Drupal::messenger()->addStatus(t('You have more than 100 hits. Use the filter settings to narrow down your list.'));
   }
 }
 

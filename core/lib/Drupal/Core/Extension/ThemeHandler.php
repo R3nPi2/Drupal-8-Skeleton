@@ -3,6 +3,8 @@
 namespace Drupal\Core\Extension;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Extension\Exception\UninstalledExtensionException;
+use Drupal\Core\Extension\Exception\UnknownExtensionException;
 use Drupal\Core\State\StateInterface;
 
 /**
@@ -147,7 +149,7 @@ class ThemeHandler implements ThemeHandlerInterface {
   public function setDefault($name) {
     $list = $this->listInfo();
     if (!isset($list[$name])) {
-      throw new \InvalidArgumentException("$name theme is not installed.");
+      throw new UninstalledExtensionException("$name theme is not installed.");
     }
     $this->configFactory->getEditable('system.theme')
       ->set('default', $name)
@@ -216,10 +218,16 @@ class ThemeHandler implements ThemeHandlerInterface {
    * {@inheritdoc}
    */
   public function refreshInfo() {
-    $this->reset();
     $extension_config = $this->configFactory->get('core.extension');
     $installed = $extension_config->get('theme');
+    // Only refresh the info if a theme has been installed. Modules are
+    // installed before themes by the installer and this method is called during
+    // module installation.
+    if (empty($installed) && empty($this->list)) {
+      return;
+    }
 
+    $this->reset();
     // @todo Avoid re-scanning all themes by retaining the original (unaltered)
     //   theme info somewhere.
     $list = $this->rebuildThemeData();
@@ -431,7 +439,7 @@ class ThemeHandler implements ThemeHandlerInterface {
   public function getName($theme) {
     $themes = $this->listInfo();
     if (!isset($themes[$theme])) {
-      throw new \InvalidArgumentException("Requested the name of a non-existing theme $theme");
+      throw new UnknownExtensionException("Requested the name of a non-existing theme $theme");
     }
     return $themes[$theme]->info['name'];
   }
@@ -480,7 +488,7 @@ class ThemeHandler implements ThemeHandlerInterface {
     if (isset($themes[$name])) {
       return $themes[$name];
     }
-    throw new \InvalidArgumentException(sprintf('The theme %s does not exist.', $name));
+    throw new UnknownExtensionException(sprintf('The theme %s does not exist.', $name));
   }
 
   /**

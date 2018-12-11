@@ -16,13 +16,19 @@ use Drupal\search\SearchPageInterface;
  * @ConfigEntityType(
  *   id = "search_page",
  *   label = @Translation("Search page"),
+ *   label_collection = @Translation("Search pages"),
+ *   label_singular = @Translation("search page"),
+ *   label_plural = @Translation("search pages"),
+ *   label_count = @PluralTranslation(
+ *     singular = "@count search page",
+ *     plural = "@count search pages",
+ *   ),
  *   handlers = {
  *     "access" = "Drupal\search\SearchPageAccessControlHandler",
  *     "list_builder" = "Drupal\search\SearchPageListBuilder",
  *     "form" = {
  *       "add" = "Drupal\search\Form\SearchPageAddForm",
  *       "edit" = "Drupal\search\Form\SearchPageEditForm",
- *       "search" = "Drupal\search\Form\SearchPageForm",
  *       "delete" = "Drupal\Core\Entity\EntityDeleteForm"
  *     }
  *   },

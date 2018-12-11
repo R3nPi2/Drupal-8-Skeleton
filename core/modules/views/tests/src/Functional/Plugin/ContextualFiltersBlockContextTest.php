@@ -3,9 +3,9 @@
 namespace Drupal\Tests\views\Functional\Plugin;
 
 use Drupal\Core\Plugin\Context\ContextDefinitionInterface;
+use Drupal\Tests\system\Functional\Cache\AssertPageCacheContextsAndTagsTrait;
 use Drupal\Tests\views\Functional\ViewTestBase;
 use Drupal\views\Tests\ViewTestData;
-use Drupal\system\Tests\Cache\AssertPageCacheContextsAndTagsTrait;
 
 /**
  * A test for contextual filters exposed as block context.
@@ -110,7 +110,7 @@ class ContextualFiltersBlockContextTest extends ViewTestBase {
       'label_display' => 'visible',
       'views_label' => '',
       'items_per_page' => 'none',
-      'context_mapping' => ['nid' => '@node.node_route_context:node']
+      'context_mapping' => ['nid' => '@node.node_route_context:node'],
     ];
     $this->assertEqual($block->getPlugin()->getConfiguration(), $expected_settings, 'Block settings are correct.');
 

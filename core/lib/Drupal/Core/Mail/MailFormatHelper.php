@@ -3,7 +3,6 @@
 namespace Drupal\Core\Mail;
 
 use Drupal\Component\Utility\Html;
-use Drupal\Component\Utility\Unicode;
 use Drupal\Component\Utility\Xss;
 use Drupal\Core\Site\Settings;
 
@@ -106,7 +105,8 @@ class MailFormatHelper {
     if (empty(static::$supportedTags)) {
       static::$supportedTags = ['a', 'em', 'i', 'strong', 'b', 'br', 'p',
         'blockquote', 'ul', 'ol', 'li', 'dl', 'dt', 'dd', 'h1', 'h2', 'h3',
-        'h4', 'h5', 'h6', 'hr'];
+        'h4', 'h5', 'h6', 'hr',
+      ];
     }
 
     // Make sure only supported tags are kept.
@@ -221,12 +221,12 @@ class MailFormatHelper {
           // Fancy headers.
           case 'h1':
             $indent[] = '======== ';
-            $casing = '\Drupal\Component\Utility\Unicode::strtoupper';
+            $casing = 'mb_strtoupper';
             break;
 
           case 'h2':
             $indent[] = '-------- ';
-            $casing = '\Drupal\Component\Utility\Unicode::strtoupper';
+            $casing = 'mb_strtoupper';
             break;
 
           case '/h1':
@@ -259,7 +259,7 @@ class MailFormatHelper {
         // Convert inline HTML text to plain text; not removing line-breaks or
         // white-space, since that breaks newlines when sanitizing plain-text.
         $value = trim(Html::decodeEntities($value));
-        if (Unicode::strlen($value)) {
+        if (mb_strlen($value)) {
           $chunk = $value;
         }
       }

@@ -5,8 +5,8 @@ namespace Drupal\Core;
 use Composer\Autoload\ClassLoader;
 use Drupal\Component\Assertion\Handle;
 use Drupal\Component\FileCache\FileCacheFactory;
-use Drupal\Component\Utility\Unicode;
 use Drupal\Component\Utility\UrlHelper;
+use Drupal\Core\Cache\DatabaseBackend;
 use Drupal\Core\Config\BootstrapConfigStorageFactory;
 use Drupal\Core\Config\NullStorage;
 use Drupal\Core\Database\Database;
@@ -19,6 +19,7 @@ use Drupal\Core\File\MimeType\MimeTypeGuesser;
 use Drupal\Core\Http\TrustedHostsRequestFactory;
 use Drupal\Core\Installer\InstallerRedirectTrait;
 use Drupal\Core\Language\Language;
+use Drupal\Core\Security\RequestSanitizer;
 use Drupal\Core\Site\Settings;
 use Drupal\Core\Test\TestDatabase;
 use Symfony\Cmf\Component\Routing\RouteObjectInterface;
@@ -77,7 +78,7 @@ class DrupalKernel implements DrupalKernelInterface, TerminableInterface {
       ],
       'cache.container' => [
         'class' => 'Drupal\Core\Cache\DatabaseBackend',
-        'arguments' => ['@database', '@cache_tags_provider.container', 'container'],
+        'arguments' => ['@database', '@cache_tags_provider.container', 'container', DatabaseBackend::MAXIMUM_NONE],
       ],
       'cache_tags_provider.container' => [
         'class' => 'Drupal\Core\Cache\DatabaseCacheTagsChecksum',
@@ -297,12 +298,16 @@ class DrupalKernel implements DrupalKernelInterface, TerminableInterface {
   }
 
   /**
-   * Determine the application root directory based on assumptions.
+   * Determine the application root directory based on this file's location.
    *
    * @return string
    *   The application root.
    */
   protected static function guessApplicationRoot() {
+    // Determine the application root by:
+    // - Removing the namespace directories from the path.
+    // - Getting the path to the directory two levels up from the path
+    //   determined in the previous step.
     return dirname(dirname(substr(__DIR__, 0, -strlen(__NAMESPACE__))));
   }
 
@@ -316,6 +321,9 @@ class DrupalKernel implements DrupalKernelInterface, TerminableInterface {
    * for bootstrap level configuration, file configuration stores, public file
    * storage and site specific modules and themes.
    *
+   * A file named sites.php must be present in the sites directory for
+   * multisite. If it doesn't exist, then 'sites/default' will be used.
+   *
    * Finds a matching site directory file by stripping the website's hostname
    * from left to right and pathname from right to left. By default, the
    * directory must contain a 'settings.php' file for it to match. If the
@@ -326,9 +334,8 @@ class DrupalKernel implements DrupalKernelInterface, TerminableInterface {
    * default.settings.php for examples on how the URL is converted to a
    * directory.
    *
-   * If a file named sites.php is present in the sites directory, it will be
-   * loaded prior to scanning for directories. That file can define aliases in
-   * an associative array named $sites. The array is written in the format
+   * The sites.php file in the sites directory can define aliases in an
+   * associative array named $sites. The array is written in the format
    * '<port>.<domain>.<path>' => 'directory'. As an example, to create a
    * directory alias for https://www.drupal.org:8080/mysite/test whose
    * configuration file is in sites/example.com, the array should be defined as:
@@ -410,7 +417,7 @@ class DrupalKernel implements DrupalKernelInterface, TerminableInterface {
    * {@inheritdoc}
    */
   public function setSitePath($path) {
-    if ($this->booted) {
+    if ($this->booted && $path !== $this->sitePath) {
       throw new \LogicException('Site path cannot be changed after calling boot()');
     }
     $this->sitePath = $path;
@@ -541,6 +548,12 @@ class DrupalKernel implements DrupalKernelInterface, TerminableInterface {
    * {@inheritdoc}
    */
   public function preHandle(Request $request) {
+    // Sanitize the request.
+    $request = RequestSanitizer::sanitize(
+      $request,
+      (array) Settings::get(RequestSanitizer::SANITIZE_WHITELIST, []),
+      (bool) Settings::get(RequestSanitizer::SANITIZE_LOG, FALSE)
+    );
 
     $this->loadLegacyIncludes();
 
@@ -675,13 +688,13 @@ class DrupalKernel implements DrupalKernelInterface, TerminableInterface {
    *
    * @param \Exception $e
    *   An exception
-   * @param Request $request
+   * @param \Symfony\Component\HttpFoundation\Request $request
    *   A Request instance
    * @param int $type
    *   The type of the request (one of HttpKernelInterface::MASTER_REQUEST or
    *   HttpKernelInterface::SUB_REQUEST)
    *
-   * @return Response
+   * @return \Symfony\Component\HttpFoundation\Response
    *   A Response instance
    *
    * @throws \Exception
@@ -916,6 +929,7 @@ class DrupalKernel implements DrupalKernelInterface, TerminableInterface {
     // new session into the master request if one was present before.
     if (($request_stack = $this->container->get('request_stack', ContainerInterface::NULL_ON_INVALID_REFERENCE))) {
       if ($request = $request_stack->getMasterRequest()) {
+        $subrequest = TRUE;
         if ($request->hasSession()) {
           $request->setSession($this->container->get('session'));
         }
@@ -927,6 +941,12 @@ class DrupalKernel implements DrupalKernelInterface, TerminableInterface {
     }
 
     \Drupal::setContainer($this->container);
+
+    // Allow other parts of the codebase to react on container initialization in
+    // subrequest.
+    if (!empty($subrequest)) {
+      $this->container->get('event_dispatcher')->dispatch(self::CONTAINER_INITIALIZE_SUBREQUEST_FINISHED);
+    }
 
     // If needs dumping flag was set, dump the container.
     if ($this->containerNeedsDumping && !$this->cacheDrupalContainer($container_definition)) {
@@ -966,23 +986,26 @@ class DrupalKernel implements DrupalKernelInterface, TerminableInterface {
     // sites/default/default.settings.php contains more runtime settings.
     // The .htaccess file contains settings that cannot be changed at runtime.
 
-    // Use session cookies, not transparent sessions that puts the session id in
-    // the query string.
-    ini_set('session.use_cookies', '1');
-    ini_set('session.use_only_cookies', '1');
-    ini_set('session.use_trans_sid', '0');
-    // Don't send HTTP headers using PHP's session handler.
-    // Send an empty string to disable the cache limiter.
-    ini_set('session.cache_limiter', '');
-    // Use httponly session cookies.
-    ini_set('session.cookie_httponly', '1');
+    if (PHP_SAPI !== 'cli') {
+      // Use session cookies, not transparent sessions that puts the session id
+      // in the query string.
+      ini_set('session.use_cookies', '1');
+      ini_set('session.use_only_cookies', '1');
+      ini_set('session.use_trans_sid', '0');
+      // Don't send HTTP headers using PHP's session handler.
+      // Send an empty string to disable the cache limiter.
+      ini_set('session.cache_limiter', '');
+      // Use httponly session cookies.
+      ini_set('session.cookie_httponly', '1');
+    }
 
     // Set sane locale settings, to ensure consistent string, dates, times and
     // numbers handling.
     setlocale(LC_ALL, 'C');
 
-    // Detect string handling method.
-    Unicode::check();
+    // Set appropriate configuration for multi-byte strings.
+    mb_internal_encoding('utf-8');
+    mb_language('uni');
 
     // Indicate that code is operating in a test child site.
     if (!defined('DRUPAL_TEST_IN_CHILD_SITE')) {
@@ -1072,7 +1095,7 @@ class DrupalKernel implements DrupalKernelInterface, TerminableInterface {
         // misses.
         $old_loader = $this->classLoader;
         $this->classLoader = $loader;
-        // Our class loaders are preprended to ensure they come first like the
+        // Our class loaders are prepended to ensure they come first like the
         // class loader they are replacing.
         $old_loader->register(TRUE);
         $loader->register(TRUE);
@@ -1179,10 +1202,10 @@ class DrupalKernel implements DrupalKernelInterface, TerminableInterface {
   /**
    * Attach synthetic values on to kernel.
    *
-   * @param ContainerInterface $container
+   * @param \Symfony\Component\DependencyInjection\ContainerInterface $container
    *   Container object
    *
-   * @return ContainerInterface
+   * @return \Symfony\Component\DependencyInjection\ContainerInterface
    */
   protected function attachSynthetic(ContainerInterface $container) {
     $persist = [];
@@ -1205,7 +1228,7 @@ class DrupalKernel implements DrupalKernelInterface, TerminableInterface {
   /**
    * Compiles a new service container.
    *
-   * @return ContainerBuilder The compiled service container
+   * @return \Drupal\Core\DependencyInjection\ContainerBuilder The compiled service container
    */
   protected function compileContainer() {
     // We are forcing a container build so it is reasonable to assume that the
@@ -1326,7 +1349,7 @@ class DrupalKernel implements DrupalKernelInterface, TerminableInterface {
   /**
    * Gets a new ContainerBuilder instance used to build the service container.
    *
-   * @return ContainerBuilder
+   * @return \Drupal\Core\DependencyInjection\ContainerBuilder
    */
   protected function getContainerBuilder() {
     return new ContainerBuilder(new ParameterBag($this->getKernelParameters()));
@@ -1585,13 +1608,14 @@ class DrupalKernel implements DrupalKernelInterface, TerminableInterface {
    */
   protected function getInstallProfile() {
     $config = $this->getConfigStorage()->read('core.extension');
-    if (!empty($config['profile'])) {
+    if (isset($config['profile'])) {
       $install_profile = $config['profile'];
     }
     // @todo https://www.drupal.org/node/2831065 remove the BC layer.
     else {
       // If system_update_8300() has not yet run fallback to using settings.
-      $install_profile = Settings::get('install_profile');
+      $settings = Settings::getAll();
+      $install_profile = isset($settings['install_profile']) ? $settings['install_profile'] : NULL;
     }
 
     // Normalize an empty string to a NULL value.

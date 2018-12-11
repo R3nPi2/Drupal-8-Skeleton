@@ -1,6 +1,7 @@
 <?php
 
 namespace Drupal\KernelTests\Core\Database;
+
 use Drupal\Core\Database\InvalidQueryException;
 use Drupal\Core\Database\Database;
 
@@ -53,7 +54,7 @@ class SelectTest extends DatabaseTestBase {
     $records = $result->fetchAll();
 
     $query = (string) $query;
-    $expected = "/* Testing query comments  * / SELECT nid FROM {node}. -- */ SELECT test.name AS name, test.age AS age\nFROM \n{test} test";
+    $expected = "/* Testing query comments  * / SELECT nid FROM {node}. -- */ SELECT test.name AS name, test.age AS age\nFROM\n{test} test";
 
     $this->assertEqual(count($records), 4, 'Returned the correct number of rows.');
     $this->assertNotIdentical(FALSE, strpos($query, $expected), 'The flattened query contains the sanitised comment string.');
@@ -466,7 +467,6 @@ class SelectTest extends DatabaseTestBase {
       ],
     ];
 
-
     $database = $this->container->get('database');
     foreach ($test_groups as $test_group) {
       $query = $database->select('test', 't');
@@ -496,8 +496,7 @@ class SelectTest extends DatabaseTestBase {
     ];
     $test_groups[] = [
       'regex' => '#Singer',
-      'expected' => [
-      ],
+      'expected' => [],
     ];
 
     foreach ($test_groups as $test_group) {

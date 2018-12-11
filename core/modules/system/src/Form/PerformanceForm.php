@@ -3,24 +3,20 @@
 namespace Drupal\system\Form;
 
 use Drupal\Core\Asset\AssetCollectionOptimizerInterface;
+use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Config\ConfigFactoryInterface;
-use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Datetime\DateFormatterInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Url;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Configure performance settings for this site.
+ *
+ * @internal
  */
 class PerformanceForm extends ConfigFormBase {
-
-  /**
-   * The render cache bin.
-   *
-   * @var \Drupal\Core\Cache\CacheBackendInterface
-   */
-  protected $renderCache;
 
   /**
    * The date formatter service.
@@ -44,25 +40,33 @@ class PerformanceForm extends ConfigFormBase {
   protected $jsCollectionOptimizer;
 
   /**
+   * The module handler.
+   *
+   * @var \Drupal\Core\Extension\ModuleHandlerInterface
+   */
+  protected $moduleHandler;
+
+  /**
    * Constructs a PerformanceForm object.
    *
    * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
    *   The factory for configuration objects.
-   * @param \Drupal\Core\Cache\CacheBackendInterface $render_cache
    * @param \Drupal\Core\Datetime\DateFormatterInterface $date_formatter
    *   The date formatter service.
    * @param \Drupal\Core\Asset\AssetCollectionOptimizerInterface $css_collection_optimizer
    *   The CSS asset collection optimizer service.
    * @param \Drupal\Core\Asset\AssetCollectionOptimizerInterface $js_collection_optimizer
    *   The JavaScript asset collection optimizer service.
+   * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_handler
+   *   The module handler.
    */
-  public function __construct(ConfigFactoryInterface $config_factory, CacheBackendInterface $render_cache, DateFormatterInterface $date_formatter, AssetCollectionOptimizerInterface $css_collection_optimizer, AssetCollectionOptimizerInterface $js_collection_optimizer) {
+  public function __construct(ConfigFactoryInterface $config_factory, DateFormatterInterface $date_formatter, AssetCollectionOptimizerInterface $css_collection_optimizer, AssetCollectionOptimizerInterface $js_collection_optimizer, ModuleHandlerInterface $module_handler) {
     parent::__construct($config_factory);
 
-    $this->renderCache = $render_cache;
     $this->dateFormatter = $date_formatter;
     $this->cssCollectionOptimizer = $css_collection_optimizer;
     $this->jsCollectionOptimizer = $js_collection_optimizer;
+    $this->moduleHandler = $module_handler;
   }
 
   /**
@@ -71,10 +75,10 @@ class PerformanceForm extends ConfigFormBase {
   public static function create(ContainerInterface $container) {
     return new static(
       $container->get('config.factory'),
-      $container->get('cache.render'),
       $container->get('date.formatter'),
       $container->get('asset.css.collection_optimizer'),
-      $container->get('asset.js.collection_optimizer')
+      $container->get('asset.js.collection_optimizer'),
+      $container->get('module_handler')
     );
   }
 
@@ -116,7 +120,6 @@ class PerformanceForm extends ConfigFormBase {
       '#type' => 'details',
       '#title' => t('Caching'),
       '#open' => TRUE,
-      '#description' => $this->t('Note: Drupal provides an internal page cache module that is recommended for small to medium-sized websites.'),
     ];
     // Identical options to the ones for block caching.
     // @see \Drupal\Core\Block\BlockBase::buildConfigurationForm()
@@ -125,10 +128,14 @@ class PerformanceForm extends ConfigFormBase {
     $period[0] = '<' . t('no caching') . '>';
     $form['caching']['page_cache_maximum_age'] = [
       '#type' => 'select',
-      '#title' => t('Page cache maximum age'),
+      '#title' => t('Browser and proxy cache maximum age'),
       '#default_value' => $config->get('cache.page.max_age'),
       '#options' => $period,
-      '#description' => t('The maximum time a page can be cached by browsers and proxies. This is used as the value for max-age in Cache-Control headers.'),
+      '#description' => t('This is used as the value for max-age in Cache-Control headers.'),
+    ];
+    $form['caching']['internal_page_cache'] = [
+      '#markup' => $this->t('Drupal provides an <a href=":module_enable">Internal Page Cache module</a> that is recommended for small to medium-sized websites.', [':module_enable' => Url::fromRoute('system.modules_list')->toString()]),
+      '#access' => !$this->moduleHandler->moduleExists('page_cache'),
     ];
 
     $directory = 'public://';
@@ -168,10 +175,6 @@ class PerformanceForm extends ConfigFormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $this->cssCollectionOptimizer->deleteAll();
     $this->jsCollectionOptimizer->deleteAll();
-    // This form allows page compression settings to be changed, which can
-    // invalidate cached pages in the render cache, so it needs to be cleared on
-    // form submit.
-    $this->renderCache->deleteAll();
 
     $this->config('system.performance')
       ->set('cache.page.max_age', $form_state->getValue('page_cache_maximum_age'))
@@ -187,7 +190,7 @@ class PerformanceForm extends ConfigFormBase {
    */
   public function submitCacheClear(array &$form, FormStateInterface $form_state) {
     drupal_flush_all_caches();
-    drupal_set_message(t('Caches cleared.'));
+    $this->messenger()->addStatus($this->t('Caches cleared.'));
   }
 
 }

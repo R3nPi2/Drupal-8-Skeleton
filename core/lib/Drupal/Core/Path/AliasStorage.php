@@ -106,11 +106,11 @@ class AliasStorage implements AliasStorageInterface {
         $this->catchException($e);
         $original = FALSE;
       }
-      $fields['pid'] = $pid;
       $query = $this->connection->update(static::TABLE)
         ->fields($fields)
         ->condition('pid', $pid);
       $pid = $query->execute();
+      $fields['pid'] = $pid;
       $fields['original'] = $original;
       $operation = 'update';
     }
@@ -406,6 +406,8 @@ class AliasStorage implements AliasStorageInterface {
 
   /**
    * Defines the schema for the {url_alias} table.
+   *
+   * @internal
    */
   public static function schemaDefinition() {
     return [

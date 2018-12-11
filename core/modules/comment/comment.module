@@ -25,12 +25,15 @@ use Drupal\field\FieldConfigInterface;
 use Drupal\field\FieldStorageConfigInterface;
 use Drupal\node\NodeInterface;
 use Drupal\user\RoleInterface;
+use Drupal\user\UserInterface;
 
 /**
  * Anonymous posters cannot enter their contact information.
  *
  * @deprecated in Drupal 8.3.x and will be removed before Drupal 9.0.0.
  *   Use \Drupal\comment\CommentInterface::ANONYMOUS_MAYNOT_CONTACT instead.
+ *
+ * @see https://www.drupal.org/node/2831620
  */
 const COMMENT_ANONYMOUS_MAYNOT_CONTACT = 0;
 
@@ -39,6 +42,8 @@ const COMMENT_ANONYMOUS_MAYNOT_CONTACT = 0;
  *
  * @deprecated in Drupal 8.3.x and will be removed before Drupal 9.0.0.
  *   Use \Drupal\comment\CommentInterface::ANONYMOUS_MAY_CONTACT instead.
+ *
+ * @see https://www.drupal.org/node/2831620
  */
 const COMMENT_ANONYMOUS_MAY_CONTACT = 1;
 
@@ -47,6 +52,8 @@ const COMMENT_ANONYMOUS_MAY_CONTACT = 1;
  *
  * @deprecated in Drupal 8.3.x and will be removed before Drupal 9.0.0.
  *   Use \Drupal\comment\CommentInterface::ANONYMOUS_MUST_CONTACT instead.
+ *
+ * @see https://www.drupal.org/node/2831620
  */
 const COMMENT_ANONYMOUS_MUST_CONTACT = 2;
 
@@ -262,7 +269,7 @@ function comment_node_view_alter(array &$build, EntityInterface $node, EntityVie
  *   content language of the current request.
  *
  * @return array
- *   An array as expected by drupal_render().
+ *   An array as expected by \Drupal\Core\Render\RendererInterface::render().
  *
  * @deprecated in Drupal 8.x and will be removed before Drupal 9.0.
  *   Use \Drupal::entityManager()->getViewBuilder('comment')->view().
@@ -285,12 +292,13 @@ function comment_view(CommentInterface $comment, $view_mode = 'full', $langcode 
  *   Defaults to NULL.
  *
  * @return array
- *   An array in the format expected by drupal_render().
+ *   An array in the format expected by
+ *   \Drupal\Core\Render\RendererInterface::render().
  *
  * @deprecated in Drupal 8.x and will be removed before Drupal 9.0.
  *   Use \Drupal::entityManager()->getViewBuilder('comment')->viewMultiple().
  *
- * @see drupal_render()
+ * @see \Drupal\Core\Render\RendererInterface::render()
  */
 function comment_view_multiple($comments, $view_mode = 'full', $langcode = NULL) {
   return entity_view_multiple($comments, $view_mode, $langcode);
@@ -332,18 +340,6 @@ function comment_form_field_ui_display_overview_form_alter(&$form, FormStateInte
 }
 
 /**
- * Implements hook_form_FORM_ID_alter() for 'field_storage_config_edit_form'.
- */
-function comment_form_field_storage_config_edit_form_alter(&$form, FormStateInterface $form_state) {
-  if ($form_state->getFormObject()->getEntity()->getType() == 'comment') {
-    // We only support posting one comment at the time so it doesn't make sense
-    // to let the site builder choose anything else.
-    $form['cardinality_container']['cardinality']['#default_value'] = 1;
-    $form['cardinality_container']['#access'] = FALSE;
-  }
-}
-
-/**
  * Implements hook_entity_storage_load().
  *
  * @see \Drupal\comment\Plugin\Field\FieldType\CommentItem::propertyDefinitions()
@@ -353,8 +349,7 @@ function comment_entity_storage_load($entities, $entity_type) {
   if (!\Drupal::entityManager()->getDefinition($entity_type)->entityClassImplements(FieldableEntityInterface::class)) {
     return;
   }
-  // @todo Investigate in https://www.drupal.org/node/2527866 why we need that.
-  if (!\Drupal::hasService('comment.manager') || !\Drupal::service('comment.manager')->getFields($entity_type)) {
+  if (!\Drupal::service('comment.manager')->getFields($entity_type)) {
     // Do not query database when entity has no comment fields.
     return;
   }
@@ -524,12 +519,12 @@ function comment_node_search_result(EntityInterface $node) {
 /**
  * Implements hook_user_cancel().
  */
-function comment_user_cancel($edit, $account, $method) {
+function comment_user_cancel($edit, UserInterface $account, $method) {
   switch ($method) {
     case 'user_cancel_block_unpublish':
       $comments = entity_load_multiple_by_properties('comment', ['uid' => $account->id()]);
       foreach ($comments as $comment) {
-        $comment->setPublished(CommentInterface::NOT_PUBLISHED);
+        $comment->setUnpublished();
         $comment->save();
       }
       break;
@@ -565,7 +560,7 @@ function comment_user_predelete($account) {
  *   The current state of the form.
  *
  * @return array
- *   An array as expected by drupal_render().
+ *   An array as expected by \Drupal\Core\Render\RendererInterface::render().
  */
 function comment_preview(CommentInterface $comment, FormStateInterface $form_state) {
   $preview_build = [];
@@ -640,7 +635,7 @@ function template_preprocess_comment(&$variables) {
     '#theme' => 'username',
     '#account' => $account,
   ];
-  $variables['author'] = drupal_render($username);
+  $variables['author'] = \Drupal::service('renderer')->render($username);
   $variables['author_id'] = $comment->getOwnerId();
   $variables['new_indicator_timestamp'] = $comment->getChangedTime();
   $variables['created'] = format_date($comment->getCreatedTime());
@@ -686,7 +681,7 @@ function template_preprocess_comment(&$variables) {
       '#theme' => 'username',
       '#account' => $account_parent,
     ];
-    $variables['parent_author'] = drupal_render($username);
+    $variables['parent_author'] = \Drupal::service('renderer')->render($username);
     $variables['parent_created'] = format_date($comment_parent->getCreatedTime());
     // Avoid calling format_date() twice on the same timestamp.
     if ($comment_parent->getChangedTime() == $comment_parent->getCreatedTime()) {

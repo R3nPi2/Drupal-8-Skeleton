@@ -24,7 +24,12 @@ class LinkFieldTest extends BrowserTestBase {
    *
    * @var array
    */
-  public static $modules = ['entity_test', 'link', 'node'];
+  public static $modules = [
+    'entity_test',
+    'link',
+    'node',
+    'link_test_base_field',
+  ];
 
   /**
    * A field to use in this test class.
@@ -54,7 +59,7 @@ class LinkFieldTest extends BrowserTestBase {
    * Tests link field URL validation.
    */
   public function testURLValidation() {
-    $field_name = Unicode::strtolower($this->randomMachineName());
+    $field_name = mb_strtolower($this->randomMachineName());
     // Create a field with settings to validate.
     $this->fieldStorage = FieldStorageConfig::create([
       'field_name' => $field_name,
@@ -115,6 +120,10 @@ class LinkFieldTest extends BrowserTestBase {
       '/' => '&lt;front&gt;',
       '/?example=llama' => '&lt;front&gt;?example=llama',
       '/#example' => '&lt;front&gt;#example',
+
+      // Trailing spaces should be ignored.
+      '/ ' => '&lt;front&gt;',
+      '/path with spaces ' => '/path with spaces',
 
       // @todo '<front>' is valid input for BC reasons, may be removed by
       //   https://www.drupal.org/node/2421941
@@ -195,7 +204,7 @@ class LinkFieldTest extends BrowserTestBase {
       preg_match('|entity_test/manage/(\d+)|', $this->getUrl(), $match);
       $id = $match[1];
       $this->assertText(t('entity_test @id has been created.', ['@id' => $id]));
-      $this->assertRaw($string);
+      $this->assertRaw('"' . $string . '"');
     }
   }
 
@@ -221,7 +230,7 @@ class LinkFieldTest extends BrowserTestBase {
    * Tests the link title settings of a link field.
    */
   public function testLinkTitle() {
-    $field_name = Unicode::strtolower($this->randomMachineName());
+    $field_name = mb_strtolower($this->randomMachineName());
     // Create a field with settings to validate.
     $this->fieldStorage = FieldStorageConfig::create([
       'field_name' => $field_name,
@@ -276,13 +285,21 @@ class LinkFieldTest extends BrowserTestBase {
         $this->assertRaw('placeholder="Enter the text for this link"');
 
         $this->assertFieldByName("{$field_name}[0][title]", '', 'Link text field found.');
+        if ($title_setting === DRUPAL_OPTIONAL) {
+          // Verify that the URL is required, if the link text is non-empty.
+          $edit = [
+            "{$field_name}[0][title]" => 'Example',
+          ];
+          $this->drupalPostForm(NULL, $edit, t('Save'));
+          $this->assertText(t('The URL field is required when the @title field is specified.', ['@title' => t('Link text')]));
+        }
         if ($title_setting === DRUPAL_REQUIRED) {
           // Verify that the link text is required, if the URL is non-empty.
           $edit = [
             "{$field_name}[0][uri]" => 'http://www.example.com',
           ];
           $this->drupalPostForm(NULL, $edit, t('Save'));
-          $this->assertText(t('@name field is required.', ['@name' => t('Link text')]));
+          $this->assertText(t('@title field is required if there is @uri input.', ['@title' => t('Link text'), '@uri' => t('URL')]));
 
           // Verify that the link text is not required, if the URL is empty.
           $edit = [
@@ -335,7 +352,7 @@ class LinkFieldTest extends BrowserTestBase {
    * Tests the default 'link' formatter.
    */
   public function testLinkFormatter() {
-    $field_name = Unicode::strtolower($this->randomMachineName());
+    $field_name = mb_strtolower($this->randomMachineName());
     // Create a field with settings to validate.
     $this->fieldStorage = FieldStorageConfig::create([
       'field_name' => $field_name,
@@ -490,7 +507,7 @@ class LinkFieldTest extends BrowserTestBase {
    * merged, since they involve different configuration and output.
    */
   public function testLinkSeparateFormatter() {
-    $field_name = Unicode::strtolower($this->randomMachineName());
+    $field_name = mb_strtolower($this->randomMachineName());
     // Create a field with settings to validate.
     $this->fieldStorage = FieldStorageConfig::create([
       'field_name' => $field_name,
@@ -606,6 +623,48 @@ class LinkFieldTest extends BrowserTestBase {
     }
   }
 
+  /**
+   * Test '#link_type' property exists on 'link_default' widget.
+   *
+   * Make sure the 'link_default' widget exposes a '#link_type' property on
+   * its element. Modules can use it to understand if a text form element is
+   * a link and also which LinkItemInterface::LINK_* is (EXTERNAL, GENERIC,
+   * INTERNAL).
+   */
+  public function testLinkTypeOnLinkWidget() {
+
+    $link_type = LinkItemInterface::LINK_EXTERNAL;
+    $field_name = mb_strtolower($this->randomMachineName());
+
+    // Create a field with settings to validate.
+    $this->fieldStorage = FieldStorageConfig::create([
+      'field_name' => $field_name,
+      'entity_type' => 'entity_test',
+      'type' => 'link',
+      'cardinality' => 1,
+    ]);
+    $this->fieldStorage->save();
+    FieldConfig::create([
+      'field_storage' => $this->fieldStorage,
+      'label' => 'Read more about this entity',
+      'bundle' => 'entity_test',
+      'settings' => [
+        'title' => DRUPAL_OPTIONAL,
+        'link_type' => $link_type,
+      ],
+    ])->save();
+
+    $this->container->get('entity.manager')
+      ->getStorage('entity_form_display')
+      ->load('entity_test.entity_test.default')
+      ->setComponent($field_name, [
+        'type' => 'link_default',
+      ])
+      ->save();
+
+    $form = \Drupal::service('entity.form_builder')->getForm(EntityTest::create());
+    $this->assertEqual($form[$field_name]['widget'][0]['uri']['#link_type'], $link_type);
+  }
 
   /**
    * Tests editing a link to a non-node entity.

@@ -21,7 +21,7 @@ class DiscoverServiceProvidersTest extends UnitTestCase {
   public function testDiscoverServiceCustom() {
     new Settings([
       'container_yamls' => [
-        __DIR__ . '/fixtures/custom.yml'
+        __DIR__ . '/fixtures/custom.yml',
       ],
     ]);
 
@@ -52,8 +52,7 @@ class DiscoverServiceProvidersTest extends UnitTestCase {
       'app' => [
         'core' => 'core/core.services.yml',
       ],
-      'site' => [
-      ],
+      'site' => [],
     ];
     $this->assertAttributeSame($expect, 'serviceYamls', $kernel);
   }

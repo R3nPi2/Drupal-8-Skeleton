@@ -37,14 +37,14 @@ interface StatementInterface extends \Traversable {
    * "the access type must be omitted" if it is protected; i.e., conflicting
    * statements). The access type has to be protected.
    */
-  //protected function __construct(Connection $dbh);
+  // protected function __construct(Connection $dbh);
 
   /**
    * Executes a prepared statement
    *
    * @param $args
    *   An array of values with as many elements as there are bound parameters in
-   *   the SQL statement being executed.
+   *   the SQL statement being executed. This can be NULL.
    * @param $options
    *   An array of options for this query.
    *

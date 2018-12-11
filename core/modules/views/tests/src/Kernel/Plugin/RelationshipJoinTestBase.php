@@ -44,6 +44,8 @@ abstract class RelationshipJoinTestBase extends PluginKernelTestBase {
    * Overrides \Drupal\views\Tests\ViewTestBase::schemaDefinition().
    *
    * Adds a uid column to test the relationships.
+   *
+   * @internal
    */
   protected function schemaDefinition() {
     $schema = parent::schemaDefinition();
@@ -53,7 +55,7 @@ abstract class RelationshipJoinTestBase extends PluginKernelTestBase {
       'type' => 'int',
       'unsigned' => TRUE,
       'not null' => TRUE,
-      'default' => 0
+      'default' => 0,
     ];
 
     return $schema;
@@ -72,8 +74,8 @@ abstract class RelationshipJoinTestBase extends PluginKernelTestBase {
       'relationship' => [
         'id' => 'standard',
         'base' => 'users_field_data',
-        'base field' => 'uid'
-      ]
+        'base field' => 'uid',
+      ],
     ];
 
     return $data;

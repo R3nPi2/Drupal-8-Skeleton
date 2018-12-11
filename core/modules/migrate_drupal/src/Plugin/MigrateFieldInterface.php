@@ -17,7 +17,7 @@ interface MigrateFieldInterface extends PluginInspectionInterface {
    * @param \Drupal\migrate\Plugin\MigrationInterface $migration
    *   The migration entity.
    */
-  public function processField(MigrationInterface $migration);
+  public function alterFieldMigration(MigrationInterface $migration);
 
   /**
    * Apply any custom processing to the field instance migration.
@@ -25,7 +25,7 @@ interface MigrateFieldInterface extends PluginInspectionInterface {
    * @param \Drupal\migrate\Plugin\MigrationInterface $migration
    *   The migration entity.
    */
-  public function processFieldInstance(MigrationInterface $migration);
+  public function alterFieldInstanceMigration(MigrationInterface $migration);
 
   /**
    * Apply any custom processing to the field widget migration.
@@ -33,7 +33,7 @@ interface MigrateFieldInterface extends PluginInspectionInterface {
    * @param \Drupal\migrate\Plugin\MigrationInterface $migration
    *   The migration entity.
    */
-  public function processFieldWidget(MigrationInterface $migration);
+  public function alterFieldWidgetMigration(MigrationInterface $migration);
 
   /**
    * Apply any custom processing to the field formatter migration.
@@ -41,17 +41,39 @@ interface MigrateFieldInterface extends PluginInspectionInterface {
    * @param \Drupal\migrate\Plugin\MigrationInterface $migration
    *   The migration entity.
    */
-  public function processFieldFormatter(MigrationInterface $migration);
+  public function alterFieldFormatterMigration(MigrationInterface $migration);
+
+  /**
+   * Get the field formatter type from the source.
+   *
+   * @param \Drupal\migrate\Row $row
+   *   The field being migrated.
+   *
+   * @return string
+   *   The field formatter type.
+   */
+  public function getFieldFormatterType(Row $row);
 
   /**
    * Get a map between D6 formatters and D8 formatters for this field type.
    *
-   * This is used by static::processFieldFormatter() in the base class.
+   * This is used by static::alterFieldFormatterMigration() in the base class.
    *
    * @return array
    *   The keys are D6 formatters and the values are D8 formatters.
    */
   public function getFieldFormatterMap();
+
+  /**
+   * Get the field widget type from the source.
+   *
+   * @param \Drupal\migrate\Row $row
+   *   The field being migrated.
+   *
+   * @return string
+   *   The field widget type.
+   */
+  public function getFieldWidgetType(Row $row);
 
   /**
    * Get a map between D6 and D8 widgets for this field type.
@@ -71,7 +93,7 @@ interface MigrateFieldInterface extends PluginInspectionInterface {
    * @param array $data
    *   The array of field data from FieldValues::fieldData().
    */
-  public function processFieldValues(MigrationInterface $migration, $field_name, $data);
+  public function defineValueProcessPipeline(MigrationInterface $migration, $field_name, $data);
 
   /**
    * Computes the destination type of a migrated field.

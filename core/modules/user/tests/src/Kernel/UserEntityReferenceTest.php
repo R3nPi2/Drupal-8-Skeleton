@@ -2,9 +2,9 @@
 
 namespace Drupal\Tests\user\Kernel;
 
-use Drupal\field\Tests\EntityReference\EntityReferenceTestTrait;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\KernelTests\Core\Entity\EntityKernelTestBase;
+use Drupal\Tests\field\Traits\EntityReferenceTestTrait;
 use Drupal\user\Entity\Role;
 
 /**
@@ -76,7 +76,6 @@ class UserEntityReferenceTest extends EntityKernelTestBase {
     $user3 = $this->createUser(['name' => 'aabbbb']);
     $user3->addRole($this->role2->id());
     $user3->save();
-
 
     /** @var \Drupal\Core\Entity\EntityAutocompleteMatcher $autocomplete */
     $autocomplete = \Drupal::service('entity.autocomplete_matcher');

@@ -2,7 +2,7 @@
 
 namespace Drupal\views\Plugin\views;
 
-use Drupal\Component\Utility\SafeMarkup;
+use Drupal\Component\Render\FormattableMarkup;
 use Drupal\Core\Form\FormStateInterface;
 
 /**
@@ -55,11 +55,11 @@ trait BrokenHandlerTrait {
 
     foreach ($this->definition['original_configuration'] as $key => $value) {
       if (is_scalar($value)) {
-        $items[] = SafeMarkup::format('@key: @value', ['@key' => $key, '@value' => $value]);
+        $items[] = new FormattableMarkup('@key: @value', ['@key' => $key, '@value' => $value]);
       }
     }
 
-    $description_bottom = t('Enabling the appropriate module will may solve this issue. Otherwise, check to see if there is a module update available.');
+    $description_bottom = t('Enabling the appropriate module may solve this issue. Otherwise, check to see if there is a module update available.');
 
     $form['description'] = [
       '#type' => 'container',

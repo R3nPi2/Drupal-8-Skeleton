@@ -43,7 +43,7 @@ class LocaleConfigManager {
   /**
    * The string storage for reading and writing translations.
    *
-   * @var \Drupal\locale\StringStorageInterface;
+   * @var \Drupal\locale\StringStorageInterface
    */
   protected $localeStorage;
 
@@ -140,9 +140,7 @@ class LocaleConfigManager {
     if ($this->isSupported($name)) {
       // Create typed configuration wrapper based on install storage data.
       $data = $this->defaultConfigStorage->read($name);
-      $type_definition = $this->typedConfigManager->getDefinition($name);
-      $data_definition = $this->typedConfigManager->buildDataDefinition($type_definition, $data);
-      $typed_config = $this->typedConfigManager->create($data_definition, $data);
+      $typed_config = $this->typedConfigManager->createFromNameAndData($name, $data);
       if ($typed_config instanceof TraversableTypedDataInterface) {
         return $this->getTranslatableData($typed_config);
       }

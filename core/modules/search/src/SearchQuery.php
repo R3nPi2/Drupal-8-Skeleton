@@ -2,7 +2,7 @@
 
 namespace Drupal\search;
 
-use Drupal\Component\Utility\Unicode;
+use Drupal\Core\Database\Query\Condition;
 use Drupal\Core\Database\Query\SelectExtender;
 use Drupal\Core\Database\Query\SelectInterface;
 
@@ -205,7 +205,7 @@ class SearchQuery extends SelectExtender {
     $this->addTag('search_' . $type);
 
     // Initialize conditions and status.
-    $this->conditions = db_and();
+    $this->conditions = new Condition('AND');
     $this->status = 0;
 
     return $this;
@@ -313,7 +313,7 @@ class SearchQuery extends SelectExtender {
         }
         $has_or = TRUE;
         $has_new_scores = FALSE;
-        $queryor = db_or();
+        $queryor = new Condition('OR');
         foreach ($key as $or) {
           list($num_new_scores) = $this->parseWord($or);
           $has_new_scores |= $num_new_scores;
@@ -363,7 +363,7 @@ class SearchQuery extends SelectExtender {
     $split = explode(' ', $word);
     foreach ($split as $s) {
       $num = is_numeric($s);
-      if ($num || Unicode::strlen($s) >= \Drupal::config('search.settings')->get('index.minimum_word_size')) {
+      if ($num || mb_strlen($s) >= \Drupal::config('search.settings')->get('index.minimum_word_size')) {
         if (!isset($this->words[$s])) {
           $this->words[$s] = $s;
           $num_new_scores++;
@@ -401,7 +401,7 @@ class SearchQuery extends SelectExtender {
     }
 
     // Build the basic search query: match the entered keywords.
-    $or = db_or();
+    $or = new Condition('OR');
     foreach ($this->words as $word) {
       $or->condition('i.word', $word);
     }
@@ -570,10 +570,9 @@ class SearchQuery extends SelectExtender {
       }
     }
 
-
     // Add arguments for the keyword relevance normalization number.
     $normalization = 1.0 / $this->normalize;
-    for ($i = 0; $i < $this->relevance_count; $i++ ) {
+    for ($i = 0; $i < $this->relevance_count; $i++) {
       $this->scoresArguments[':normalization_' . $i] = $normalization;
     }
 

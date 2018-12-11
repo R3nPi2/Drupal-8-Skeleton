@@ -4,13 +4,14 @@ namespace Drupal\Tests\search\Functional;
 
 use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\language\Entity\ConfigurableLanguage;
+use Drupal\Tests\BrowserTestBase;
 
 /**
  * Tests entities with multilingual fields.
  *
  * @group search
  */
-class SearchMultilingualEntityTest extends SearchTestBase {
+class SearchMultilingualEntityTest extends BrowserTestBase {
 
   /**
    * List of searchable nodes.
@@ -26,10 +27,15 @@ class SearchMultilingualEntityTest extends SearchTestBase {
    */
   protected $plugin;
 
-  public static $modules = ['language', 'locale', 'comment'];
+  /**
+   * {@inheritdoc}
+   */
+  protected static $modules = ['language', 'locale', 'comment', 'node', 'search'];
 
   protected function setUp() {
     parent::setUp();
+
+    $this->drupalCreateContentType(['type' => 'page', 'name' => 'Basic page']);
 
     // Create a user who can administer search, do searches, see the status
     // report, and administer cron. Log in.
@@ -78,16 +84,11 @@ class SearchMultilingualEntityTest extends SearchTestBase {
       // After the third node, we don't care what the settings are. But we
       // need to have at least 5 to make sure the throttling is working
       // correctly. So, let's make 8 total.
-      [
-      ],
-      [
-      ],
-      [
-      ],
-      [
-      ],
-      [
-      ],
+      [],
+      [],
+      [],
+      [],
+      [],
     ];
     $this->searchableNodes = [];
     foreach ($nodes as $setting) {

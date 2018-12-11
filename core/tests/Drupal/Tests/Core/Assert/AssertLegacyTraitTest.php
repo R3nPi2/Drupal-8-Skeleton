@@ -14,6 +14,7 @@ use PHPUnit_Framework_ExpectationFailedException;
 /**
  * @coversDefaultClass \Drupal\FunctionalTests\AssertLegacyTrait
  * @group Assert
+ * @group legacy
  */
 class AssertLegacyTraitTest extends UnitTestCase {
 
@@ -162,6 +163,18 @@ class AssertLegacyTraitTest extends UnitTestCase {
       ->shouldBeCalled();
 
     $this->assertNoPattern('/.*foo$/');
+  }
+
+  /**
+   * @covers ::assertNoCacheTag
+   * @expectedDeprecation assertNoCacheTag() is deprecated and scheduled for removal in Drupal 9.0.0. Use $this->assertSession()->responseHeaderNotContains() instead. See https://www.drupal.org/node/2864029.
+   */
+  public function testAssertNoCacheTag() {
+    $this->webAssert
+      ->responseHeaderNotContains('X-Drupal-Cache-Tags', 'some-cache-tag')
+      ->shouldBeCalled();
+
+    $this->assertNoCacheTag('some-cache-tag');
   }
 
   /**

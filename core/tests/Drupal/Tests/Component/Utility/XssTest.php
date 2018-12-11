@@ -5,7 +5,7 @@ namespace Drupal\Tests\Component\Utility;
 use Drupal\Component\Utility\Html;
 use Drupal\Component\Utility\UrlHelper;
 use Drupal\Component\Utility\Xss;
-use Drupal\Tests\UnitTestCase;
+use PHPUnit\Framework\TestCase;
 
 /**
  * XSS Filtering tests.
@@ -20,7 +20,7 @@ use Drupal\Tests\UnitTestCase;
  * - CVE-2002-1806, ~CVE-2005-0682, ~CVE-2005-2106, CVE-2005-3973,
  *   CVE-2006-1226 (= rev. 1.112?), CVE-2008-0273, CVE-2008-3740.
  */
-class XssTest extends UnitTestCase {
+class XssTest extends TestCase {
 
   /**
    * {@inheritdoc}
@@ -503,31 +503,31 @@ class XssTest extends UnitTestCase {
         '<img src="http://example.com/foo.jpg" title="Example: title" alt="Example: alt">',
         '<img src="http://example.com/foo.jpg" title="Example: title" alt="Example: alt">',
         'Image tag with alt and title attribute',
-        ['img']
+        ['img'],
       ],
       [
         '<a href="https://www.drupal.org/" rel="dc:publisher">Drupal</a>',
         '<a href="https://www.drupal.org/" rel="dc:publisher">Drupal</a>',
         'Link tag with rel attribute',
-        ['a']
+        ['a'],
       ],
       [
         '<span property="dc:subject">Drupal 8: The best release ever.</span>',
         '<span property="dc:subject">Drupal 8: The best release ever.</span>',
         'Span tag with property attribute',
-        ['span']
+        ['span'],
       ],
       [
         '<img src="http://example.com/foo.jpg" data-caption="Drupal 8: The best release ever.">',
         '<img src="http://example.com/foo.jpg" data-caption="Drupal 8: The best release ever.">',
         'Image tag with data attribute',
-        ['img']
+        ['img'],
       ],
       [
         '<a data-a2a-url="foo"></a>',
         '<a data-a2a-url="foo"></a>',
         'Link tag with numeric data attribute',
-        ['a']
+        ['a'],
       ],
     ];
   }

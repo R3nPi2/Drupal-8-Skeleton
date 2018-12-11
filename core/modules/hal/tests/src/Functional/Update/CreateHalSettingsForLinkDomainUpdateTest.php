@@ -2,7 +2,7 @@
 
 namespace Drupal\Tests\hal\Functional\Update;
 
-use Drupal\system\Tests\Update\UpdatePathTestBase;
+use Drupal\FunctionalTests\Update\UpdatePathTestBase;
 
 /**
  * Tests that 'hal.settings' is created, to store 'link_domain'.
@@ -10,6 +10,7 @@ use Drupal\system\Tests\Update\UpdatePathTestBase;
  * @see https://www.drupal.org/node/2758897
  *
  * @group hal
+ * @group legacy
  */
 class CreateHalSettingsForLinkDomainUpdateTest extends UpdatePathTestBase {
 

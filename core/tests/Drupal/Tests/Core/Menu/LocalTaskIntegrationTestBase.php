@@ -61,10 +61,10 @@ abstract class LocalTaskIntegrationTestBase extends UnitTestCase {
       ->setMethods(NULL)
       ->getMock();
 
-    $controllerResolver = $this->getMock('Symfony\Component\HttpKernel\Controller\ControllerResolverInterface');
-    $property = new \ReflectionProperty('Drupal\Core\Menu\LocalTaskManager', 'controllerResolver');
+    $argumentResolver = $this->getMock('Symfony\Component\HttpKernel\Controller\ArgumentResolverInterface');
+    $property = new \ReflectionProperty('Drupal\Core\Menu\LocalTaskManager', 'argumentResolver');
     $property->setAccessible(TRUE);
-    $property->setValue($manager, $controllerResolver);
+    $property->setValue($manager, $argumentResolver);
 
     // todo mock a request with a route.
     $request_stack = new RequestStack();
@@ -128,7 +128,7 @@ abstract class LocalTaskIntegrationTestBase extends UnitTestCase {
    * @param $expected_tasks
    *   A list of tasks groups by level expected at the given route
    * @param array $route_params
-   *   (optional) a list of route parameters used to resolve tasks.
+   *   (optional) A list of route parameters used to resolve tasks.
    */
   protected function assertLocalTasks($route_name, $expected_tasks, $route_params = []) {
 

@@ -7,7 +7,7 @@ use Drupal\Core\DependencyInjection\ServiceProviderInterface;
 use Drupal\rest\LinkManager\LinkManager;
 use Drupal\rest\LinkManager\RelationLinkManager;
 use Drupal\rest\LinkManager\TypeLinkManager;
-use Symfony\Component\DependencyInjection\DefinitionDecorator;
+use Symfony\Component\DependencyInjection\ChildDefinition;
 use Symfony\Component\DependencyInjection\Reference;
 
 /**
@@ -27,19 +27,22 @@ class RestServiceProvider implements ServiceProviderInterface {
     if (isset($modules['hal'])) {
       // @deprecated in Drupal 8.3.x and will be removed before Drupal 9.0.0.
       //   Use hal.link_manager instead.
-      $service_definition = new DefinitionDecorator(new Reference('hal.link_manager'));
+      // @see https://www.drupal.org/node/2830467
+      $service_definition = new ChildDefinition(new Reference('hal.link_manager'));
       $service_definition->setClass(LinkManager::class);
       $container->setDefinition('rest.link_manager', $service_definition);
 
       // @deprecated in Drupal 8.3.x and will be removed before Drupal 9.0.0.
       //   Use hal.link_manager.type instead.
-      $service_definition = new DefinitionDecorator(new Reference('hal.link_manager.type'));
+      // @see https://www.drupal.org/node/2830467
+      $service_definition = new ChildDefinition(new Reference('hal.link_manager.type'));
       $service_definition->setClass(TypeLinkManager::class);
       $container->setDefinition('rest.link_manager.type', $service_definition);
 
       // @deprecated in Drupal 8.3.x and will be removed before Drupal 9.0.0.
       //   Use hal.link_manager.relation instead.
-      $service_definition = new DefinitionDecorator(new Reference('hal.link_manager.relation'));
+      // @see https://www.drupal.org/node/2830467
+      $service_definition = new ChildDefinition(new Reference('hal.link_manager.relation'));
       $service_definition->setClass(RelationLinkManager::class);
       $container->setDefinition('rest.link_manager.relation', $service_definition);
     }

@@ -50,7 +50,7 @@ abstract class StylePluginBase extends PluginBase {
   protected $rowTokens = [];
 
   /**
-   * Does the style plugin allows to use style plugins.
+   * Whether or not this style uses a row plugin.
    *
    * @var bool
    */
@@ -71,7 +71,7 @@ abstract class StylePluginBase extends PluginBase {
   protected $usesGrouping = TRUE;
 
   /**
-   * Does the style plugin for itself support to add fields to it's output.
+   * Does the style plugin for itself support to add fields to its output.
    *
    * This option only makes sense on style plugins without row plugins, like
    * for example table.
@@ -385,7 +385,7 @@ abstract class StylePluginBase extends PluginBase {
    * @param \Drupal\Core\Form\FormStateInterface $form_state
    *   The current state of the form.
    * @param string $type
-   *    The display type, either block or page.
+   *   The display type, either block or page.
    */
   public function wizardForm(&$form, FormStateInterface $form_state, $type) {
   }
@@ -413,13 +413,15 @@ abstract class StylePluginBase extends PluginBase {
    * interfere with the sorts. If so it should build; if it returns
    * any non-TRUE value, normal sorting will NOT be added to the query.
    */
-  public function buildSort() { return TRUE; }
+  public function buildSort() {
+    return TRUE;
+  }
 
   /**
    * Called by the view builder to let the style build a second set of
    * sorts that will come after any other sorts in the view.
    */
-  public function buildSortPost() { }
+  public function buildSortPost() {}
 
   /**
    * Allow the style to do stuff before each row is rendered.
@@ -455,8 +457,8 @@ abstract class StylePluginBase extends PluginBase {
    */
   public function render() {
     if ($this->usesRowPlugin() && empty($this->view->rowPlugin)) {
-      debug('Drupal\views\Plugin\views\style\StylePluginBase: Missing row plugin');
-      return;
+      trigger_error('Drupal\views\Plugin\views\style\StylePluginBase: Missing row plugin', E_WARNING);
+      return [];
     }
 
     // Group the rows according to the grouping instructions, if specified.
@@ -788,7 +790,7 @@ abstract class StylePluginBase extends PluginBase {
    * @param $index
    *   The index count of the row.
    * @param $field
-   *    The id of the field.
+   *   The id of the field.
    */
   public function getFieldValue($index, $field) {
     $this->view->row_index = $index;

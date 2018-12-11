@@ -98,6 +98,7 @@ class CommentViewBuilder extends EntityViewBuilder {
 
     // A counter to track the indentation level.
     $current_indent = 0;
+    $attach_history = $this->moduleHandler->moduleExists('history') && $this->currentUser->isAuthenticated();
 
     foreach ($entities as $id => $entity) {
       if ($build[$id]['#comment_threaded']) {
@@ -126,12 +127,15 @@ class CommentViewBuilder extends EntityViewBuilder {
       $display = $displays[$entity->bundle()];
       if ($display->getComponent('links')) {
         $build[$id]['links'] = [
-          '#lazy_builder' => ['comment.lazy_builders:renderLinks', [
-            $entity->id(),
-            $view_mode,
-            $entity->language()->getId(),
-            !empty($entity->in_preview),
-          ]],
+          '#lazy_builder' => [
+            'comment.lazy_builders:renderLinks',
+            [
+              $entity->id(),
+              $view_mode,
+              $entity->language()->getId(),
+              !empty($entity->in_preview),
+            ],
+          ],
           '#create_placeholder' => TRUE,
         ];
       }
@@ -140,7 +144,7 @@ class CommentViewBuilder extends EntityViewBuilder {
         $build[$id]['#attached'] = [];
       }
       $build[$id]['#attached']['library'][] = 'comment/drupal.comment-by-viewer';
-      if ($this->moduleHandler->moduleExists('history') && $this->currentUser->isAuthenticated()) {
+      if ($attach_history && $commented_entity->getEntityTypeId() === 'node') {
         $build[$id]['#attached']['library'][] = 'comment/drupal.comment-new-indicator';
 
         // Embed the metadata for the comment "new" indicators on this node.

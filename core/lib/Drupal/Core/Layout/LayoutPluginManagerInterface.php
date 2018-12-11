@@ -3,16 +3,12 @@
 namespace Drupal\Core\Layout;
 
 use Drupal\Component\Plugin\CategorizingPluginManagerInterface;
+use Drupal\Core\Plugin\FilteredPluginManagerInterface;
 
 /**
  * Provides the interface for a plugin manager of layouts.
- *
- * @internal
- *   The layout system is currently experimental and should only be leveraged by
- *   experimental modules and development releases of contributed modules.
- *   See https://www.drupal.org/core/experimental for more information.
  */
-interface LayoutPluginManagerInterface extends CategorizingPluginManagerInterface {
+interface LayoutPluginManagerInterface extends CategorizingPluginManagerInterface, FilteredPluginManagerInterface {
 
   /**
    * Gets theme implementations for layouts.

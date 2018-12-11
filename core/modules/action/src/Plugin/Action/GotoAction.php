@@ -40,7 +40,7 @@ class GotoAction extends ConfigurableActionBase implements ContainerFactoryPlugi
   protected $unroutedUrlAssembler;
 
   /**
-   * Constructs a new DeleteNode object.
+   * Constructs a GotoAction object.
    *
    * @param array $configuration
    *   A configuration array containing information about the plugin instance.
@@ -92,7 +92,7 @@ class GotoAction extends ConfigurableActionBase implements ContainerFactoryPlugi
       $url = $this->unroutedUrlAssembler->assemble($uri, $options);
     }
     $response = new RedirectResponse($url);
-    $listener = function($event) use ($response) {
+    $listener = function ($event) use ($response) {
       $event->setResponse($response);
     };
     // Add the listener to the event dispatcher.

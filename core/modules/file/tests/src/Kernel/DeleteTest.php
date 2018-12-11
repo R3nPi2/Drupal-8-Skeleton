@@ -10,6 +10,7 @@ use Drupal\file\Entity\File;
  * @group file
  */
 class DeleteTest extends FileManagedUnitTestBase {
+
   /**
    * Tries deleting a normal file (as opposed to a directory, symlink, etc).
    */
@@ -28,6 +29,11 @@ class DeleteTest extends FileManagedUnitTestBase {
    * Tries deleting a file that is in use.
    */
   public function testInUse() {
+    // This test expects unused managed files to be marked as a temporary file
+    // and then deleted up by file_cron().
+    $this->config('file.settings')
+      ->set('make_unused_managed_files_temporary', TRUE)
+      ->save();
     $file = $this->createFile();
     $file_usage = $this->container->get('file.usage');
     $file_usage->add($file, 'testing', 'test', 1);

@@ -78,8 +78,8 @@ abstract class PrerenderList extends FieldPluginBase implements MultiItemsFieldH
           '#template' => '{{ items|safe_join(separator) }}',
           '#context' => [
             'items' => $items,
-            'separator' => $this->sanitizeValue($this->options['separator'], 'xss_admin')
-          ]
+            'separator' => $this->sanitizeValue($this->options['separator'], 'xss_admin'),
+          ],
         ];
       }
       else {
@@ -90,7 +90,7 @@ abstract class PrerenderList extends FieldPluginBase implements MultiItemsFieldH
           '#list_type' => $this->options['type'],
         ];
       }
-      return drupal_render($render);
+      return \Drupal::service('renderer')->render($render);
     }
   }
 

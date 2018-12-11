@@ -53,6 +53,8 @@ abstract class FilterPluginBase extends HandlerBase implements CacheableDependen
 
   /**
    * Contains the operator which is used on the query.
+   *
+   * @var string
    */
   public $operator = '=';
 
@@ -104,7 +106,6 @@ abstract class FilterPluginBase extends HandlerBase implements CacheableDependen
       $this->options['expose']['multiple'] = TRUE;
     }
 
-
     // If there are relationships in the view, allow empty should be true
     // so that we can do IS NULL checks on items. Not all filters respect
     // allow empty, but string and numeric do and that covers enough.
@@ -131,9 +132,11 @@ abstract class FilterPluginBase extends HandlerBase implements CacheableDependen
         'required' => ['default' => FALSE],
         'remember' => ['default' => FALSE],
         'multiple' => ['default' => FALSE],
-        'remember_roles' => ['default' => [
-          RoleInterface::AUTHENTICATED_ID => RoleInterface::AUTHENTICATED_ID,
-        ]],
+        'remember_roles' => [
+          'default' => [
+            RoleInterface::AUTHENTICATED_ID => RoleInterface::AUTHENTICATED_ID,
+          ],
+        ],
       ],
     ];
 
@@ -174,7 +177,9 @@ abstract class FilterPluginBase extends HandlerBase implements CacheableDependen
   /**
    * Determine if a filter can be exposed.
    */
-  public function canExpose() { return TRUE; }
+  public function canExpose() {
+    return TRUE;
+  }
 
   /**
    * Determine if a filter can be converted into a group.
@@ -302,18 +307,20 @@ abstract class FilterPluginBase extends HandlerBase implements CacheableDependen
    * Provide a list of options for the default operator form.
    * Should be overridden by classes that don't override operatorForm
    */
-  public function operatorOptions() { return []; }
+  public function operatorOptions() {
+    return [];
+  }
 
   /**
    * Validate the operator form.
    */
-  protected function operatorValidate($form, FormStateInterface $form_state) { }
+  protected function operatorValidate($form, FormStateInterface $form_state) {}
 
   /**
    * Perform any necessary changes to the form values prior to storage.
    * There is no need for this function to actually store the data.
    */
-  public function operatorSubmit($form, FormStateInterface $form_state) { }
+  public function operatorSubmit($form, FormStateInterface $form_state) {}
 
   /**
    * Shortcut to display the value form.
@@ -341,13 +348,13 @@ abstract class FilterPluginBase extends HandlerBase implements CacheableDependen
   /**
    * Validate the options form.
    */
-  protected function valueValidate($form, FormStateInterface $form_state) { }
+  protected function valueValidate($form, FormStateInterface $form_state) {}
 
   /**
    * Perform any necessary changes to the form values prior to storage.
    * There is no need for this function to actually store the data.
    */
-  protected function valueSubmit($form, FormStateInterface $form_state) { }
+  protected function valueSubmit($form, FormStateInterface $form_state) {}
 
   /**
    * Shortcut to display the exposed options form.
@@ -649,7 +656,6 @@ abstract class FilterPluginBase extends HandlerBase implements CacheableDependen
     return FALSE;
   }
 
-
   /**
    * Validate the build group options form.
    */
@@ -828,7 +834,6 @@ abstract class FilterPluginBase extends HandlerBase implements CacheableDependen
     }
   }
 
-
   /**
    * Render our chunk of the exposed filter form when selecting
    *
@@ -989,7 +994,9 @@ abstract class FilterPluginBase extends HandlerBase implements CacheableDependen
       '#default_value' => $this->options['group_info']['remember'],
     ];
 
-    $groups = ['All' => $this->t('- Any -')]; // The string '- Any -' will not be rendered see @theme_views_ui_build_group_filter_form
+    // The string '- Any -' will not be rendered.
+    // @see theme_views_ui_build_group_filter_form()
+    $groups = ['All' => $this->t('- Any -')];
 
     // Provide 3 options to start when we are in a new group.
     if (count($this->options['group_info']['group_items']) == 0) {
@@ -1096,7 +1103,7 @@ abstract class FilterPluginBase extends HandlerBase implements CacheableDependen
       '#required' => TRUE,
       '#attributes' => [
         'class' => ['default-radios'],
-      ]
+      ],
     ];
     // From all groups, let chose which is the default.
     $form['group_info']['default_group_multiple'] = [
@@ -1105,7 +1112,7 @@ abstract class FilterPluginBase extends HandlerBase implements CacheableDependen
       '#default_value' => $this->options['group_info']['default_group_multiple'],
       '#attributes' => [
         'class' => ['default-checkboxes'],
-      ]
+      ],
     ];
 
     $form['group_info']['add_group'] = [
@@ -1156,7 +1163,6 @@ abstract class FilterPluginBase extends HandlerBase implements CacheableDependen
     $form_state->get('force_build_group_options', TRUE);
   }
 
-
   /**
    * Make some translations to a form item to make it more suitable to
    * exposing.
@@ -1197,8 +1203,6 @@ abstract class FilterPluginBase extends HandlerBase implements CacheableDependen
       $form['#required'] = TRUE;
     }
   }
-
-
 
   /**
    * Sanitizes the HTML select element's options.

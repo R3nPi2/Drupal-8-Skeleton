@@ -117,7 +117,13 @@ class TypedDataManager extends DefaultPluginManager implements TypedDataManagerI
       throw new \InvalidArgumentException("Invalid data type '$data_type' has been given");
     }
     $class = $type_definition['definition_class'];
-    return $class::createFromDataType($data_type);
+    $data_definition = $class::createFromDataType($data_type);
+
+    if (method_exists($data_definition, 'setTypedDataManager')) {
+      $data_definition->setTypedDataManager($this);
+    }
+
+    return $data_definition;
   }
 
   /**
@@ -162,9 +168,8 @@ class TypedDataManager extends DefaultPluginManager implements TypedDataManagerI
       // a shorter string than the serialized form, so array access is faster.
       $parts[] = json_encode($settings);
     }
-    // Property path for the requested data object. When creating a list item,
-    // use 0 in the key as all items look the same.
-    $parts[] = $object->getPropertyPath() . '.' . (is_numeric($property_name) ? 0 : $property_name);
+    // Property path for the requested data object.
+    $parts[] = $object->getPropertyPath() . '.' . $property_name;
     $key = implode(':', $parts);
 
     // Create the prototype if needed.
@@ -183,7 +188,7 @@ class TypedDataManager extends DefaultPluginManager implements TypedDataManagerI
         throw new \InvalidArgumentException("Property $property_name is unknown.");
       }
       // Create the prototype without any value, but with initial parenting
-      // so that constructors can set up the objects correclty.
+      // so that constructors can set up the objects correctly.
       $this->prototypes[$key] = $this->create($definition, NULL, $property_name, $object);
     }
 

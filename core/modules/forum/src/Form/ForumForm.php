@@ -8,6 +8,8 @@ use Drupal\taxonomy\TermForm;
 
 /**
  * Base form for forum term edit forms.
+ *
+ * @internal
  */
 class ForumForm extends TermForm {
 
@@ -29,9 +31,8 @@ class ForumForm extends TermForm {
    * {@inheritdoc}
    */
   public function form(array $form, FormStateInterface $form_state) {
-    $taxonomy_term = $this->entity;
     // Build the bulk of the form from the parent taxonomy term form.
-    $form = parent::form($form, $form_state, $taxonomy_term);
+    $form = parent::form($form, $form_state);
 
     // Set the title and description of the name field.
     $form['name']['#title'] = $this->t('Forum name');
@@ -48,7 +49,7 @@ class ForumForm extends TermForm {
 
     // Our parent field is different to the taxonomy term.
     $form['parent']['#tree'] = TRUE;
-    $form['parent'][0] = $this->forumParentSelect($taxonomy_term->id(), $this->t('Parent'));
+    $form['parent'][0] = $this->forumParentSelect($this->entity->id(), $this->t('Parent'));
 
     $form['#theme_wrappers'] = ['form__forum'];
     $this->forumFormType = $this->t('forum');
@@ -76,18 +77,18 @@ class ForumForm extends TermForm {
     $status = $term_storage->save($term);
 
     $route_name = $this->urlStub == 'container' ? 'entity.taxonomy_term.forum_edit_container_form' : 'entity.taxonomy_term.forum_edit_form';
-    $route_parameters  = ['taxonomy_term' => $term->id()];
+    $route_parameters = ['taxonomy_term' => $term->id()];
     $link = $this->l($this->t('Edit'), new Url($route_name, $route_parameters));
     $view_link = $term->link($term->getName());
     switch ($status) {
       case SAVED_NEW:
-        drupal_set_message($this->t('Created new @type %term.', ['%term' => $view_link, '@type' => $this->forumFormType]));
+        $this->messenger()->addStatus($this->t('Created new @type %term.', ['%term' => $view_link, '@type' => $this->forumFormType]));
         $this->logger('forum')->notice('Created new @type %term.', ['%term' => $term->getName(), '@type' => $this->forumFormType, 'link' => $link]);
         $form_state->setValue('tid', $term->id());
         break;
 
       case SAVED_UPDATED:
-        drupal_set_message($this->t('The @type %term has been updated.', ['%term' => $term->getName(), '@type' => $this->forumFormType]));
+        $this->messenger()->addStatus($this->t('The @type %term has been updated.', ['%term' => $term->getName(), '@type' => $this->forumFormType]));
         $this->logger('forum')->notice('Updated @type %term.', ['%term' => $term->getName(), '@type' => $this->forumFormType, 'link' => $link]);
         break;
     }

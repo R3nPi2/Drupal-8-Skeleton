@@ -295,7 +295,7 @@ class ViewExecutableTest extends UnitTestCase {
     unset($view->display_handler);
     $expected = [
       'test_hook__test_view',
-      'test_hook'
+      'test_hook',
     ];
     $this->assertEquals($expected, $view->buildThemeFunctions('test_hook'));
 
@@ -307,11 +307,11 @@ class ViewExecutableTest extends UnitTestCase {
       'test_hook__two',
       'test_hook__and_three',
       'test_hook__test_view',
-      'test_hook'
+      'test_hook',
     ];
     $this->assertEquals($expected, $view->buildThemeFunctions('test_hook'));
 
-    //Change the name of the display plugin and make sure that is in the array.
+    // Change the name of the display plugin and make sure that is in the array.
     $view->display_handler->display['display_plugin'] = 'default2';
 
     $expected = [
@@ -323,7 +323,7 @@ class ViewExecutableTest extends UnitTestCase {
       'test_hook__test_view__default2',
       'test_hook__default2',
       'test_hook__test_view',
-      'test_hook'
+      'test_hook',
     ];
     $this->assertEquals($expected, $view->buildThemeFunctions('test_hook'));
   }
@@ -362,14 +362,16 @@ class ViewExecutableTest extends UnitTestCase {
     foreach (['field', 'filter', 'argument', 'sort'] as $handler_type) {
       $display->expects($this->atLeastOnce())
         ->method('setOption')
-        ->with($this->callback(function($argument) {
+        ->with($this->callback(function ($argument) {
           return $argument;
-        }), ['test_field' => [
-          'id' => 'test_field',
-          'table' => 'test_entity',
-          'field' => 'test_field',
-          'plugin_id' => 'standard',
-        ]]);
+        }), [
+          'test_field' => [
+            'id' => 'test_field',
+            'table' => 'test_entity',
+            'field' => 'test_field',
+            'plugin_id' => 'standard',
+          ],
+        ]);
     }
 
     foreach (['field', 'filter', 'argument', 'sort'] as $handler_type) {
@@ -403,16 +405,18 @@ class ViewExecutableTest extends UnitTestCase {
     foreach (['field', 'filter', 'argument', 'sort'] as $handler_type) {
       $display->expects($this->atLeastOnce())
         ->method('setOption')
-        ->with($this->callback(function($argument) {
+        ->with($this->callback(function ($argument) {
           return $argument;
-        }), ['test_field' => [
-          'id' => 'test_field',
-          'table' => 'test_entity',
-          'field' => 'test_field',
-          'entity_type' => 'test_entity_type',
-          'entity_field' => 'test_field',
-          'plugin_id' => 'standard',
-        ]]);
+        }), [
+          'test_field' => [
+            'id' => 'test_field',
+            'table' => 'test_entity',
+            'field' => 'test_field',
+            'entity_type' => 'test_entity_type',
+            'entity_field' => 'test_field',
+            'plugin_id' => 'standard',
+          ],
+        ]);
     }
 
     foreach (['field', 'filter', 'argument', 'sort'] as $handler_type) {

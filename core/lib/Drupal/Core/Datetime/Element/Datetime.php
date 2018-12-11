@@ -45,6 +45,7 @@ class Datetime extends DateElementBase {
       ],
       '#process' => [
         [$class, 'processDatetime'],
+        [$class, 'processAjaxForm'],
         [$class, 'processGroup'],
       ],
       '#pre_render' => [
@@ -69,8 +70,8 @@ class Datetime extends DateElementBase {
    */
   public static function valueCallback(&$element, $input, FormStateInterface $form_state) {
     if ($input !== FALSE) {
-      $date_input  = $element['#date_date_element'] != 'none' && !empty($input['date']) ? $input['date'] : '';
-      $time_input  = $element['#date_time_element'] != 'none' && !empty($input['time']) ? $input['time'] : '';
+      $date_input = $element['#date_date_element'] != 'none' && !empty($input['date']) ? $input['date'] : '';
+      $time_input = $element['#date_time_element'] != 'none' && !empty($input['time']) ? $input['time'] : '';
       $date_format = $element['#date_date_element'] != 'none' ? static::getHtml5DateFormat($element) : '';
       $time_format = $element['#date_time_element'] != 'none' ? static::getHtml5TimeFormat($element) : '';
       $timezone = !empty($element['#date_timezone']) ? $element['#date_timezone'] : NULL;
@@ -180,9 +181,13 @@ class Datetime extends DateElementBase {
    *     dynamic value that is that many years earlier or later than the current
    *     year at the time the form is displayed. Used in jQueryUI datepicker year
    *     range and HTML5 min/max date settings. Defaults to '1900:2050'.
-   *   - #date_increment: The increment to use for minutes and seconds, i.e.
-   *    '15' would show only :00, :15, :30 and :45. Used for HTML5 step values and
-   *     jQueryUI datepicker settings. Defaults to 1 to show every minute.
+   *   - #date_increment: The interval (step) to use when incrementing or
+   *     decrementing time, in seconds. For example, if this value is set to 30,
+   *     time increases (or decreases) in steps of 30 seconds (00:00:00,
+   *     00:00:30, 00:01:00, and so on.) If this value is a multiple of 60, the
+   *     "seconds"-component will not be shown in the input. Used for HTML5 step
+   *     values and jQueryUI datepicker settings. Defaults to 1 to show every
+   *     second.
    *   - #date_timezone: The local timezone to use when creating dates. Generally
    *     this should be left empty and it will be set correctly for the user using
    *     the form. Useful if the default value is empty to designate a desired
@@ -305,6 +310,25 @@ class Datetime extends DateElementBase {
             $callback($element, $form_state, $date);
           }
         }
+      }
+    }
+
+    return $element;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function processAjaxForm(&$element, FormStateInterface $form_state, &$complete_form) {
+    $element = parent::processAjaxForm($element, $form_state, $complete_form);
+
+    // Copy the #ajax settings to the child elements.
+    if (isset($element['#ajax'])) {
+      if (isset($element['date'])) {
+        $element['date']['#ajax'] = $element['#ajax'];
+      }
+      if (isset($element['time'])) {
+        $element['time']['#ajax'] = $element['#ajax'];
       }
     }
 

@@ -4,7 +4,6 @@ namespace Drupal\views_ui;
 
 use Drupal\Component\Utility\Html;
 use Drupal\Component\Utility\Timer;
-use Drupal\Component\Utility\Xss;
 use Drupal\Core\EventSubscriber\AjaxResponseSubscriber;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\views\Views;
@@ -49,10 +48,10 @@ class ViewUI implements ViewEntityInterface {
    * If this view is locked for editing.
    *
    * If this view is locked it will contain the result of
-   * \Drupal\user\SharedTempStore::getMetadata(). Which can be a stdClass or
+   * \Drupal\Core\TempStore\SharedTempStore::getMetadata(). Which can be a stdClass or
    * NULL.
    *
-   * @var stdClass
+   * @var object
    */
   public $lock;
 
@@ -688,7 +687,11 @@ class ViewUI implements ViewEntityInterface {
                   '#template' => "<strong>{% trans 'Title' %}</strong>",
                 ],
               ],
-              Xss::filterAdmin($executable->getTitle()),
+              [
+                'data' => [
+                  '#markup' => $executable->getTitle(),
+                ],
+              ],
             ];
             if (isset($path)) {
               // @todo Views should expect and store a leading /. See:
@@ -710,7 +713,7 @@ class ViewUI implements ViewEntityInterface {
                 'data' => [
                   '#markup' => $path,
                 ],
-              ]
+              ],
             ];
           }
           if ($show_stats) {
@@ -787,7 +790,7 @@ class ViewUI implements ViewEntityInterface {
     else {
       foreach ($errors as $display_errors) {
         foreach ($display_errors as $error) {
-          drupal_set_message($error, 'error');
+          \Drupal::messenger()->addError($error);
         }
       }
       $preview = ['#markup' => t('Unable to preview due to validation errors.')];
@@ -852,11 +855,11 @@ class ViewUI implements ViewEntityInterface {
   }
 
   /**
-   * Sets a cached view object in the user tempstore.
+   * Sets a cached view object in the shared tempstore.
    */
   public function cacheSet() {
     if ($this->isLocked()) {
-      drupal_set_message(t('Changes cannot be made to a locked view.'), 'error');
+      \Drupal::messenger()->addError(t('Changes cannot be made to a locked view.'));
       return;
     }
 
@@ -875,7 +878,7 @@ class ViewUI implements ViewEntityInterface {
     $executable->default_display = NULL;
     $executable->query = NULL;
     $executable->displayHandlers = NULL;
-    \Drupal::service('user.shared_tempstore')->get('views')->set($this->id(), $this);
+    \Drupal::service('tempstore.shared')->get('views')->set($this->id(), $this);
   }
 
   /**

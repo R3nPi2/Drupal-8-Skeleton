@@ -32,20 +32,20 @@ trait EntityPublishedTrait {
       throw new UnsupportedEntityTypeDefinitionException('The entity type ' . $entity_type->id() . ' does not have a "published" entity key.');
     }
 
-    return [$entity_type->getKey('published') => BaseFieldDefinition::create('boolean')
-      ->setLabel(new TranslatableMarkup('Publishing status'))
-      ->setDescription(new TranslatableMarkup('A boolean indicating the published state.'))
-      ->setRevisionable(TRUE)
-      ->setTranslatable(TRUE)
-      ->setDefaultValue(TRUE)];
+    return [
+      $entity_type->getKey('published') => BaseFieldDefinition::create('boolean')
+        ->setLabel(new TranslatableMarkup('Published'))
+        ->setRevisionable(TRUE)
+        ->setTranslatable(TRUE)
+        ->setDefaultValue(TRUE),
+    ];
   }
 
   /**
    * {@inheritdoc}
    */
   public function isPublished() {
-    $key = $this->getEntityType()->getKey('published');
-    return (bool) $this->get($key)->value;
+    return (bool) $this->getEntityKey('published');
   }
 
   /**

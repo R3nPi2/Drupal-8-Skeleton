@@ -32,7 +32,7 @@ use Drupal\Core\Url;
  * strings, if they are literals provided by your module, should be
  * internationalized and translated; see the
  * @link i18n Internationalization topic @endlink for more information. Note
- * that although in the properies list that follows, they are designated to be
+ * that although in the properties list that follows, they are designated to be
  * of type string, they would generally end up being
  * \Drupal\Core\StringTranslation\TranslatableMarkup objects instead.
  *
@@ -308,6 +308,7 @@ abstract class RenderElement extends PluginBase implements ElementInterface {
         case 'radio':
         case 'checkbox':
         case 'select':
+        case 'date':
           $element['#ajax']['event'] = 'change';
           break;
 

@@ -3,6 +3,7 @@
 namespace Drupal\comment\Plugin\views\argument;
 
 use Drupal\Core\Database\Connection;
+use Drupal\Core\Database\Query\Condition;
 use Drupal\views\Plugin\views\argument\ArgumentPluginBase;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -24,7 +25,7 @@ class UserUid extends ArgumentPluginBase {
   protected $database;
 
   /**
-   * Constructs a Drupal\Component\Plugin\PluginBase object.
+   * Constructs a \Drupal\comment\Plugin\views\argument\UserUid object.
    *
    * @param array $configuration
    *   A configuration array containing information about the plugin instance.
@@ -90,7 +91,7 @@ class UserUid extends ArgumentPluginBase {
       $subselect->where("c.entity_id = $this->tableAlias.$entity_id");
       $subselect->condition('c.entity_type', $entity_type);
 
-      $condition = db_or()
+      $condition = (new Condition('OR'))
         ->condition("$this->tableAlias.uid", $this->argument, '=')
         ->exists($subselect);
 

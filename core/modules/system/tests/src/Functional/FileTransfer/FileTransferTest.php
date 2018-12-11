@@ -20,7 +20,7 @@ class FileTransferTest extends BrowserTestBase {
 
   protected function setUp() {
     parent::setUp();
-    $this->testConnection = TestFileTransfer::factory(\Drupal::root(), ['hostname' => $this->hostname, 'username' => $this->username, 'password' => $this->password, 'port' => $this->port]);
+    $this->testConnection = TestFileTransfer::factory($this->root, ['hostname' => $this->hostname, 'username' => $this->username, 'password' => $this->password, 'port' => $this->port]);
   }
 
   public function _getFakeModuleFiles() {
@@ -28,11 +28,11 @@ class FileTransferTest extends BrowserTestBase {
       'fake.module',
       'fake.info.yml',
       'theme' => [
-        'fake.html.twig'
+        'fake.html.twig',
       ],
       'inc' => [
-        'fake.inc'
-      ]
+        'fake.inc',
+      ],
     ];
     return $files;
   }
@@ -60,7 +60,7 @@ class FileTransferTest extends BrowserTestBase {
         $this->_writeDirectory($base . DIRECTORY_SEPARATOR . $key, $file);
       }
       else {
-        //just write the filename into the file
+        // just write the filename into the file
         file_put_contents($base . DIRECTORY_SEPARATOR . $file, $file);
       }
     }
@@ -82,7 +82,7 @@ class FileTransferTest extends BrowserTestBase {
 
     $gotit = TRUE;
     try {
-      $this->testConnection->copyDirectory($source, \Drupal::root() . '/' . PublicStream::basePath());
+      $this->testConnection->copyDirectory($source, $this->root . '/' . PublicStream::basePath());
     }
     catch (FileTransferException $e) {
       $gotit = FALSE;

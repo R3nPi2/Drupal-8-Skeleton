@@ -6,7 +6,6 @@ use Doctrine\Common\Annotations\SimpleAnnotationReader;
 use Doctrine\Common\Reflection\StaticReflectionParser;
 use Drupal\Component\Annotation\Reflection\MockFileFinder;
 use Drupal\Component\Utility\NestedArray;
-use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Extension\ExtensionDiscovery;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\simpletest\Exception\MissingGroupException;
@@ -25,11 +24,11 @@ class TestDiscovery {
   protected $classLoader;
 
   /**
-   * Backend for caching discovery results.
+   * Statically cached list of test classes.
    *
-   * @var \Drupal\Core\Cache\CacheBackendInterface
+   * @var array
    */
-  protected $cacheBackend;
+  protected $testClasses;
 
   /**
    * Cached map of all test namespaces to respective directories.
@@ -70,14 +69,11 @@ class TestDiscovery {
    *   \Symfony\Component\ClassLoader\ApcClassLoader.
    * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_handler
    *   The module handler.
-   * @param \Drupal\Core\Cache\CacheBackendInterface $cache_backend
-   *   (optional) Backend for caching discovery results.
    */
-  public function __construct($root, $class_loader, ModuleHandlerInterface $module_handler, CacheBackendInterface $cache_backend = NULL) {
+  public function __construct($root, $class_loader, ModuleHandlerInterface $module_handler) {
     $this->root = $root;
     $this->classLoader = $class_loader;
     $this->moduleHandler = $module_handler;
-    $this->cacheBackend = $cache_backend;
   }
 
   /**
@@ -144,8 +140,8 @@ class TestDiscovery {
    *   An array of tests keyed by the the group name.
    * @code
    *     $groups['block'] => array(
-   *       'Drupal\block\Tests\BlockTest' => array(
-   *         'name' => 'Drupal\block\Tests\BlockTest',
+   *       'Drupal\Tests\block\Functional\BlockTest' => array(
+   *         'name' => 'Drupal\Tests\block\Functional\BlockTest',
    *         'description' => 'Tests block UI CRUD functionality.',
    *         'group' => 'block',
    *       ),
@@ -159,9 +155,9 @@ class TestDiscovery {
     $reader = new SimpleAnnotationReader();
     $reader->addNamespace('Drupal\\simpletest\\Annotation');
 
-    if (!isset($extension)) {
-      if ($this->cacheBackend && $cache = $this->cacheBackend->get('simpletest:discovery:classes')) {
-        return $cache->data;
+    if (!isset($extension) && empty($types)) {
+      if (!empty($this->testClasses)) {
+        return $this->testClasses;
       }
     }
     $list = [];
@@ -189,14 +185,17 @@ class TestDiscovery {
         // abstract class, trait or test fixture.
         continue;
       }
-      // Skip this test class if it requires unavailable modules.
-      // @todo PHPUnit skips tests with unmet requirements when executing a test
-      //   (instead of excluding them upfront). Refactor test runner to follow
-      //   that approach.
+      // Skip this test class if it is a Simpletest-based test and requires
+      // unavailable modules. TestDiscovery should not filter out module
+      // requirements for PHPUnit-based test classes.
+      // @todo Move this behavior to \Drupal\simpletest\TestBase so tests can be
+      //       marked as skipped, instead.
       // @see https://www.drupal.org/node/1273478
-      if (!empty($info['requires']['module'])) {
-        if (array_diff($info['requires']['module'], $this->availableExtensions['module'])) {
-          continue;
+      if ($info['type'] == 'Simpletest') {
+        if (!empty($info['requires']['module'])) {
+          if (array_diff($info['requires']['module'], $this->availableExtensions['module'])) {
+            continue;
+          }
         }
       }
 
@@ -210,12 +209,10 @@ class TestDiscovery {
     }
 
     // Allow modules extending core tests to disable originals.
-    $this->moduleHandler->alter('simpletest', $list);
+    $this->moduleHandler->alterDeprecated('Convert your test to a PHPUnit-based one and implement test listeners. See: https://www.drupal.org/node/2939892', 'simpletest', $list);
 
-    if (!isset($extension)) {
-      if ($this->cacheBackend) {
-        $this->cacheBackend->set('simpletest:discovery:classes', $list);
-      }
+    if (!isset($extension) && empty($types)) {
+      $this->testClasses = $list;
     }
 
     if ($types) {
@@ -285,13 +282,21 @@ class TestDiscovery {
     $flags |= \FilesystemIterator::SKIP_DOTS;
     $flags |= \FilesystemIterator::FOLLOW_SYMLINKS;
     $flags |= \FilesystemIterator::CURRENT_AS_SELF;
+    $flags |= \FilesystemIterator::KEY_AS_FILENAME;
 
     $iterator = new \RecursiveDirectoryIterator($path, $flags);
-    $filter = new \RecursiveCallbackFilterIterator($iterator, function ($current, $key, $iterator) {
+    $filter = new \RecursiveCallbackFilterIterator($iterator, function ($current, $file_name, $iterator) {
       if ($iterator->hasChildren()) {
         return TRUE;
       }
-      return $current->isFile() && $current->getExtension() === 'php';
+      // We don't want to discover abstract TestBase classes, traits or
+      // interfaces. They can be deprecated and will call @trigger_error()
+      // during discovery.
+      return
+        substr($file_name, -4) === '.php' &&
+        substr($file_name, -12) !== 'TestBase.php' &&
+        substr($file_name, -9) !== 'Trait.php' &&
+        substr($file_name, -13) !== 'Interface.php';
     });
     $files = new \RecursiveIteratorIterator($filter);
     $classes = [];
@@ -309,7 +314,7 @@ class TestDiscovery {
   /**
    * Retrieves information about a test class for UI purposes.
    *
-   * @param string $class
+   * @param string $classname
    *   The test classname.
    * @param string $doc_comment
    *   (optional) The class PHPDoc comment. If not passed in reflection will be
@@ -328,7 +333,7 @@ class TestDiscovery {
    *   If the class does not have a @group annotation.
    */
   public static function getTestInfo($classname, $doc_comment = NULL) {
-    if (!$doc_comment) {
+    if ($doc_comment === NULL) {
       $reflection = new \ReflectionClass($classname);
       $doc_comment = $reflection->getDocComment();
     }

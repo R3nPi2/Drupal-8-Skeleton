@@ -235,13 +235,13 @@ function template_preprocess_fieldset(&$variables) {
  * @param array $variables
  *   An associative array containing:
  *   - element: An associative array containing the properties of the element.
- *     Properties used: #attributes, #children, #open,
- *     #description, #id, #title, #value, #optional.
+ *     Properties used: #attributes, #children, #description, #required,
+ *     #summary_attributes, #title, #value.
  */
 function template_preprocess_details(&$variables) {
   $element = $variables['element'];
   $variables['attributes'] = $element['#attributes'];
-  $variables['summary_attributes'] = new Attribute();
+  $variables['summary_attributes'] = new Attribute($element['#summary_attributes']);
   if (!empty($element['#title'])) {
     $variables['summary_attributes']['role'] = 'button';
     if (!empty($element['#attributes']['id'])) {
@@ -251,6 +251,11 @@ function template_preprocess_details(&$variables) {
     $variables['summary_attributes']['aria-pressed'] = $variables['summary_attributes']['aria-expanded'];
   }
   $variables['title'] = (!empty($element['#title'])) ? $element['#title'] : '';
+  // If the element title is a string, wrap it a render array so that markup
+  // will not be escaped (but XSS-filtered).
+  if (is_string($variables['title']) && $variables['title'] !== '') {
+    $variables['title'] = ['#markup' => $variables['title']];
+  }
   $variables['description'] = (!empty($element['#description'])) ? $element['#description'] : '';
   $variables['children'] = (isset($element['#children'])) ? $element['#children'] : '';
   $variables['value'] = (isset($element['#value'])) ? $element['#value'] : '';
@@ -370,12 +375,13 @@ function template_preprocess_form(&$variables) {
  * @param array $variables
  *   An associative array containing:
  *   - element: An associative array containing the properties of the element.
- *     Properties used: #title, #value, #description, #rows, #cols,
- *     #placeholder, #required, #attributes, #resizable
+ *     Properties used: #title, #value, #description, #rows, #cols, #maxlength,
+ *     #placeholder, #required, #attributes, #resizable.
  */
 function template_preprocess_textarea(&$variables) {
   $element = $variables['element'];
-  Element::setAttributes($element, ['id', 'name', 'rows', 'cols', 'placeholder']);
+  $attributes = ['id', 'name', 'rows', 'cols', 'maxlength', 'placeholder'];
+  Element::setAttributes($element, $attributes);
   RenderElement::setAttributes($element, ['form-textarea']);
   $variables['wrapper_attributes'] = new Attribute();
   $variables['attributes'] = new Attribute($element['#attributes']);
@@ -638,7 +644,7 @@ function template_preprocess_form_element_label(&$variables) {
  *   else {
  *     $message = t('Finished with an error.');
  *   }
- *   drupal_set_message($message);
+ *   \Drupal::messenger()->addMessage($message);
  *   // Providing data for the redirected page is done through $_SESSION.
  *   foreach ($results as $result) {
  *     $items[] = t('Loaded node %title.', array('%title' => $result));
@@ -786,8 +792,8 @@ function batch_set($batch_definition) {
  *   is omitted and no redirect response was returned by the 'finished'
  *   callback. Any query arguments will be automatically persisted.
  * @param \Drupal\Core\Url $url
- *   (optional - should only be used for separate scripts like update.php)
- *   URL of the batch processing page.
+ *   (optional) URL of the batch processing page. Should only be used for
+ *   separate scripts like update.php.
  * @param $redirect_callback
  *   (optional) Specify a function to be called to redirect to the progressive
  *   processing page.

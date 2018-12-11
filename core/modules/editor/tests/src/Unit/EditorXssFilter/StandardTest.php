@@ -364,8 +364,11 @@ class StandardTest extends UnitTestCase {
 
     // IMG STYLE with expression.
     // @see https://www.owasp.org/index.php/XSS_Filter_Evasion_Cheat_Sheet#IMG_STYLE_with_expression
-    $data[] = ['exp/*<A STYLE=\'no\xss:noxss("*//*");
-xss:ex/*XSS*//*/*/pression(alert("XSS"))\'>', 'exp/*<A>'];
+    $data[] = [
+      'exp/*<A STYLE=\'no\xss:noxss("*//*");
+xss:ex/*XSS*//*/*/pression(alert("XSS"))\'>',
+      'exp/*<A>',
+    ];
 
     // STYLE tag (Older versions of Netscape only).
     // @see https://www.owasp.org/index.php/XSS_Filter_Evasion_Cheat_Sheet#STYLE_tag_.28Older_versions_of_Netscape_only.29
@@ -443,7 +446,9 @@ xss:ex/*XSS*//*/*/pression(alert("XSS"))\'>', 'exp/*<A>'];
     // @see https://www.owasp.org/index.php/XSS_Filter_Evasion_Cheat_Sheet#Downlevel-Hidden_block
     $data[] = ['<!--[if gte IE 4]>
  <SCRIPT>alert(\'XSS\');</SCRIPT>
- <![endif]-->', "\n alert('XSS');\n "];
+ <![endif]-->',
+      "\n alert('XSS');\n ",
+    ];
 
     // BASE tag.
     // @see https://www.owasp.org/index.php/XSS_Filter_Evasion_Cheat_Sheet#BASE_tag
@@ -578,20 +583,20 @@ xss:ex/*XSS*//*/*/pression(alert("XSS"))\'>', 'exp/*<A>'];
         '<unknown style="visibility:hidden">Pink Fairy Armadillo</unknown><video src="gerenuk.mp4"><script>alert(0)</script>',
         '<unknown>Pink Fairy Armadillo</unknown><video src="gerenuk.mp4">alert(0)',
         'Disallow only the script tag',
-        ['script']
+        ['script'],
       ],
       [
         '<unknown style="visibility:hidden">Pink Fairy Armadillo</unknown><video src="gerenuk.mp4"><script>alert(0)</script>',
         '<unknown>Pink Fairy Armadillo</unknown>alert(0)',
         'Disallow both the script and video tags',
-        ['script', 'video']
+        ['script', 'video'],
       ],
       // No real use case for this, but it is an edge case we must ensure works.
       [
         '<unknown style="visibility:hidden">Pink Fairy Armadillo</unknown><video src="gerenuk.mp4"><script>alert(0)</script>',
         '<unknown>Pink Fairy Armadillo</unknown><video src="gerenuk.mp4"><script>alert(0)</script>',
         'Disallow no tags',
-        []
+        [],
       ],
     ];
   }

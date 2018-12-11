@@ -3,25 +3,24 @@
 namespace Drupal\Core\Layout;
 
 use Drupal\Component\Annotation\Plugin\Discovery\AnnotationBridgeDecorator;
-use Drupal\Component\Plugin\Discovery\DerivativeDiscoveryDecorator;
 use Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException;
 use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Extension\ThemeHandlerInterface;
 use Drupal\Core\Plugin\DefaultPluginManager;
 use Drupal\Core\Plugin\Discovery\AnnotatedClassDiscovery;
+use Drupal\Core\Plugin\Discovery\ContainerDerivativeDiscoveryDecorator;
 use Drupal\Core\Plugin\Discovery\YamlDiscoveryDecorator;
 use Drupal\Core\Layout\Annotation\Layout;
+use Drupal\Core\Plugin\FilteredPluginManagerTrait;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
 
 /**
  * Provides a plugin manager for layouts.
- *
- * @internal
- *   The layout system is currently experimental and should only be leveraged by
- *   experimental modules and development releases of contributed modules.
- *   See https://www.drupal.org/core/experimental for more information.
  */
 class LayoutPluginManager extends DefaultPluginManager implements LayoutPluginManagerInterface {
+
+  use FilteredPluginManagerTrait;
 
   /**
    * The theme handler.
@@ -47,8 +46,16 @@ class LayoutPluginManager extends DefaultPluginManager implements LayoutPluginMa
     parent::__construct('Plugin/Layout', $namespaces, $module_handler, LayoutInterface::class, Layout::class);
     $this->themeHandler = $theme_handler;
 
-    $this->setCacheBackend($cache_backend, 'layout');
-    $this->alterInfo('layout');
+    $type = $this->getType();
+    $this->setCacheBackend($cache_backend, $type);
+    $this->alterInfo($type);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function getType() {
+    return 'layout';
   }
 
   /**
@@ -65,8 +72,12 @@ class LayoutPluginManager extends DefaultPluginManager implements LayoutPluginMa
     if (!$this->discovery) {
       $discovery = new AnnotatedClassDiscovery($this->subdir, $this->namespaces, $this->pluginDefinitionAnnotationName, $this->additionalAnnotationNamespaces);
       $discovery = new YamlDiscoveryDecorator($discovery, 'layouts', $this->moduleHandler->getModuleDirectories() + $this->themeHandler->getThemeDirectories());
+      $discovery
+        ->addTranslatableProperty('label')
+        ->addTranslatableProperty('description')
+        ->addTranslatableProperty('category');
       $discovery = new AnnotationBridgeDecorator($discovery, $this->pluginDefinitionAnnotationName);
-      $discovery = new DerivativeDiscoveryDecorator($discovery);
+      $discovery = new ContainerDerivativeDiscoveryDecorator($discovery);
       $this->discovery = $discovery;
     }
     return $this->discovery;
@@ -134,6 +145,15 @@ class LayoutPluginManager extends DefaultPluginManager implements LayoutPluginMa
     if (!$definition->getDefaultRegion()) {
       $definition->setDefaultRegion(key($definition->getRegions()));
     }
+    // Makes sure region names are translatable.
+    $regions = array_map(function ($region) {
+      if (!$region['label'] instanceof TranslatableMarkup) {
+        // Region labels from YAML discovery needs translation.
+        $region['label'] = new TranslatableMarkup($region['label'], [], ['context' => 'layout_region']);
+      }
+      return $region;
+    }, $definition->getRegions());
+    $definition->setRegions($regions);
   }
 
   /**

@@ -15,7 +15,7 @@
  *
  * Callback for batch_set().
  *
- * @param $MULTIPLE_PARAMS
+ * @param $multiple_params
  *   Additional parameters specific to the batch. These are specified in the
  *   array passed to batch_set().
  * @param array|\ArrayAccess $context
@@ -54,7 +54,7 @@
  *   It is discouraged to typehint this parameter as an array, to allow an
  *   object implement \ArrayAccess to be passed.
  */
-function callback_batch_operation($MULTIPLE_PARAMS, &$context) {
+function callback_batch_operation($multiple_params, &$context) {
   $node_storage = \Drupal::entityTypeManager()->getStorage('node');
   $database = \Drupal::database();
 
@@ -121,7 +121,7 @@ function callback_batch_finished($success, $results, $operations) {
       '#items' => $results,
     ];
     $message .= drupal_render($list);
-    drupal_set_message($message);
+    \Drupal::messenger()->addStatus($message);
   }
   else {
     // An error occurred.
@@ -129,9 +129,9 @@ function callback_batch_finished($success, $results, $operations) {
     $error_operation = reset($operations);
     $message = t('An error occurred while processing %error_operation with arguments: @arguments', [
       '%error_operation' => $error_operation[0],
-      '@arguments' => print_r($error_operation[1], TRUE)
+      '@arguments' => print_r($error_operation[1], TRUE),
     ]);
-    drupal_set_message($message, 'error');
+    \Drupal::messenger()->addError($message);
   }
 }
 

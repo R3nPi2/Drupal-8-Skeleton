@@ -3,7 +3,7 @@
 namespace Drupal\KernelTests\Core\Config;
 
 use Drupal\Component\Utility\Crypt;
-use Drupal\Component\Utility\SafeMarkup;
+use Drupal\Component\Render\FormattableMarkup;
 use Drupal\Core\Config\ConfigNameException;
 use Drupal\Core\Config\ConfigValueException;
 use Drupal\Core\Config\InstallStorage;
@@ -278,12 +278,12 @@ class ConfigCRUDTest extends KernelTestBase {
     $this->assertIdentical($storage->read($name), $data);
 
     // Test that schema type enforcement can be overridden by trusting the data.
-    $this->assertIdentical(99, $config->get('int'));
+    $this->assertSame(99, $config->get('int'));
     $config->set('int', '99')->save(TRUE);
-    $this->assertIdentical('99', $config->get('int'));
+    $this->assertSame('99', $config->get('int'));
     // Test that re-saving without testing the data enforces the schema type.
     $config->save();
-    $this->assertIdentical($data, $config->get());
+    $this->assertSame($data, $config->get());
 
     // Test that setting an unsupported type for a config object with a schema
     // fails.
@@ -292,7 +292,7 @@ class ConfigCRUDTest extends KernelTestBase {
       $this->fail('No Exception thrown upon saving invalid data type.');
     }
     catch (UnsupportedDataTypeConfigException $e) {
-      $this->pass(SafeMarkup::format('%class thrown upon saving invalid data type.', [
+      $this->pass(new FormattableMarkup('%class thrown upon saving invalid data type.', [
         '%class' => get_class($e),
       ]));
     }
@@ -309,7 +309,7 @@ class ConfigCRUDTest extends KernelTestBase {
       $this->fail('No Exception thrown upon saving invalid data type.');
     }
     catch (UnsupportedDataTypeConfigException $e) {
-      $this->pass(SafeMarkup::format('%class thrown upon saving invalid data type.', [
+      $this->pass(new FormattableMarkup('%class thrown upon saving invalid data type.', [
         '%class' => get_class($e),
       ]));
     }

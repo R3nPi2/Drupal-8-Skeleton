@@ -10,9 +10,8 @@
  * @{
  */
 
-use Drupal\Component\Utility\SafeMarkup;
+use Drupal\Component\Render\FormattableMarkup;
 use Drupal\Core\Render\Element;
-
 
 /**
  * Prepares variables for single local task link templates.
@@ -37,7 +36,7 @@ function template_preprocess_menu_local_task(&$variables) {
     $variables['is_active'] = TRUE;
 
     // Add text to indicate active tab for non-visual users.
-    $active = SafeMarkup::format('<span class="visually-hidden">@label</span>', ['@label' => t('(active tab)')]);
+    $active = new FormattableMarkup('<span class="visually-hidden">@label</span>', ['@label' => t('(active tab)')]);
     $link_text = t('@local-task-title@active', ['@local-task-title' => $link_text, '@active' => $active]);
   }
 
@@ -105,6 +104,7 @@ function menu_list_system_menus() {
  *     tasks.
  *
  * @see hook_menu_local_tasks_alter()
+ * @see https://www.drupal.org/node/2544940
  *
  * @deprecated in Drupal 8.0.0, will be removed before Drupal 9.0.0.
  */
@@ -116,6 +116,8 @@ function menu_local_tasks($level = 0) {
 
 /**
  * Returns the rendered local tasks at the top level.
+ *
+ * @see https://www.drupal.org/node/2874695
  *
  * @deprecated in Drupal 8.0.0, will be removed before Drupal 9.0.0.
  */
@@ -129,6 +131,8 @@ function menu_primary_local_tasks() {
 
 /**
  * Returns the rendered local tasks at the second level.
+ *
+ * @see https://www.drupal.org/node/2874695
  *
  * @deprecated in Drupal 8.0.0, will be removed before Drupal 9.0.0.
  */
@@ -157,8 +161,14 @@ function menu_local_tabs() {
  *
  * This should be called any time broad changes
  * might have been made to the router items or menu links.
+ *
+ * @deprecated in Drupal 8.6.0, will be removed before Drupal 9.0.0. Use
+ *   \Drupal::cache('menu')->invalidateAll() instead.
+ *
+ * @see https://www.drupal.org/node/2989138
  */
 function menu_cache_clear_all() {
+  @trigger_error("menu_cache_clear_all() is deprecated in Drupal 8.6.0 and will be removed before Drupal 9.0.0. Use \Drupal::cache('menu')->invalidateAll() instead. See https://www.drupal.org/node/2989138", E_USER_DEPRECATED);
   \Drupal::cache('menu')->invalidateAll();
 }
 

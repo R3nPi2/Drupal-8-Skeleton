@@ -15,6 +15,10 @@ interface TermStorageInterface extends ContentEntityStorageInterface {
    *
    * @param array $tids
    *   Array of terms that need to be removed from hierarchy.
+   *
+   * @todo Remove this method in Drupal 9.0.x. Now the parent references are
+   *   automatically cleared when deleting a taxonomy term.
+   *   https://www.drupal.org/node/2785693
    */
   public function deleteTermHierarchy($tids);
 
@@ -23,6 +27,10 @@ interface TermStorageInterface extends ContentEntityStorageInterface {
    *
    * @param \Drupal\Core\Entity\EntityInterface $term
    *   Term entity that needs to be added to term hierarchy information.
+   *
+   * @todo remove this method Drupal 9.0.x. Now the parent references are
+   *   automatically updates when when a taxonomy term is added/updated.
+   *   https://www.drupal.org/node/2785693
    */
   public function updateTermHierarchy(EntityInterface $term);
 
@@ -52,7 +60,7 @@ interface TermStorageInterface extends ContentEntityStorageInterface {
    * Finds all children of a term ID.
    *
    * @param int $tid
-   *   Term ID to retrieve parents for.
+   *   Term ID to retrieve children for.
    * @param string $vid
    *   An optional vocabulary ID to restrict the child search.
    *

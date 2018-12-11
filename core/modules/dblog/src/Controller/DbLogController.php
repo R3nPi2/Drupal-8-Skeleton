@@ -113,7 +113,8 @@ class DbLogController extends ControllerBase {
    * Full-length messages can be viewed on the message details page.
    *
    * @return array
-   *   A render array as expected by drupal_render().
+   *   A render array as expected by
+   *   \Drupal\Core\Render\RendererInterface::render().
    *
    * @see Drupal\dblog\Form\DblogClearLogConfirmForm
    * @see Drupal\dblog\Controller\DbLogController::eventDetails()
@@ -135,20 +136,24 @@ class DbLogController extends ControllerBase {
       [
         'data' => $this->t('Type'),
         'field' => 'w.type',
-        'class' => [RESPONSIVE_PRIORITY_MEDIUM]],
+        'class' => [RESPONSIVE_PRIORITY_MEDIUM],
+      ],
       [
         'data' => $this->t('Date'),
         'field' => 'w.wid',
         'sort' => 'desc',
-        'class' => [RESPONSIVE_PRIORITY_LOW]],
+        'class' => [RESPONSIVE_PRIORITY_LOW],
+      ],
       $this->t('Message'),
       [
         'data' => $this->t('User'),
         'field' => 'ufd.name',
-        'class' => [RESPONSIVE_PRIORITY_MEDIUM]],
+        'class' => [RESPONSIVE_PRIORITY_MEDIUM],
+      ],
       [
         'data' => $this->t('Operations'),
-        'class' => [RESPONSIVE_PRIORITY_LOW]],
+        'class' => [RESPONSIVE_PRIORITY_LOW],
+      ],
     ];
 
     $query = $this->database->select('watchdog', 'w')
@@ -233,7 +238,7 @@ class DbLogController extends ControllerBase {
    *
    * @return array
    *   If the ID is located in the Database Logging table, a build array in the
-   *   format expected by drupal_render();
+   *   format expected by \Drupal\Core\Render\RendererInterface::render().
    */
   public function eventDetails($event_id) {
     $build = [];
@@ -298,8 +303,9 @@ class DbLogController extends ControllerBase {
   /**
    * Builds a query for database log administration filters based on session.
    *
-   * @return array
-   *   An associative array with keys 'where' and 'args'.
+   * @return array|null
+   *   An associative array with keys 'where' and 'args' or NULL if there were
+   *   no filters set.
    */
   protected function buildFilterQuery() {
     if (empty($_SESSION['dblog_overview_filter'])) {
@@ -373,7 +379,8 @@ class DbLogController extends ControllerBase {
    *   Type of database log events to display (e.g., 'search').
    *
    * @return array
-   *   A build array in the format expected by drupal_render().
+   *   A build array in the format expected by
+   *   \Drupal\Core\Render\RendererInterface::render().
    */
   public function topLogMessages($type) {
     $header = [
@@ -406,7 +413,7 @@ class DbLogController extends ControllerBase {
       }
     }
 
-    $build['dblog_top_table']  = [
+    $build['dblog_top_table'] = [
       '#type' => 'table',
       '#header' => $header,
       '#rows' => $rows,

@@ -49,8 +49,8 @@ class PathProcessorTest extends UnitTestCase {
     $language_prefixes = array_keys($this->languages);
     $config = [
       'url' => [
-        'prefixes' => array_combine($language_prefixes, $language_prefixes)
-      ]
+        'prefixes' => array_combine($language_prefixes, $language_prefixes),
+      ],
     ];
 
     // Create a URL-based language negotiation method definition.
@@ -76,12 +76,6 @@ class PathProcessorTest extends UnitTestCase {
     $language_manager->expects($this->any())
       ->method('getLanguageTypes')
       ->will($this->returnValue([LanguageInterface::TYPE_INTERFACE]));
-    $language_manager->expects($this->any())
-      ->method('getNegotiationMethods')
-      ->will($this->returnValue($method_definitions));
-    $language_manager->expects($this->any())
-      ->method('getNegotiationMethodInstance')
-      ->will($this->returnValue($method_instance));
 
     $method_instance->setLanguageManager($language_manager);
     $this->languageManager = $language_manager;
@@ -115,7 +109,7 @@ class PathProcessorTest extends UnitTestCase {
     $config_factory_stub = $this->getConfigFactoryStub(
       [
         'system.site' => [
-          'page.front' => '/user/login'
+          'page.front' => '/user/login',
         ],
         'language.negotiation' => [
           'url' => [
@@ -131,10 +125,12 @@ class PathProcessorTest extends UnitTestCase {
       ->getMock();
     $negotiator->expects($this->any())
       ->method('getNegotiationMethods')
-      ->will($this->returnValue([LanguageNegotiationUrl::METHOD_ID => [
-        'class' => 'Drupal\language\Plugin\LanguageNegotiation\LanguageNegotiationUrl',
-        'weight' => 9,
-        ]]));
+      ->will($this->returnValue([
+        LanguageNegotiationUrl::METHOD_ID => [
+          'class' => 'Drupal\language\Plugin\LanguageNegotiation\LanguageNegotiationUrl',
+          'weight' => 9,
+        ],
+      ]));
     $method = new LanguageNegotiationUrl();
     $method->setConfig($config_factory_stub);
     $method->setLanguageManager($this->languageManager);

@@ -32,9 +32,9 @@ class StatisticsLastCommentName extends FieldPluginBase {
         [
           'field' => 'uid',
           'operator' => '!=',
-          'value' => '0'
-        ]
-      ]
+          'value' => '0',
+        ],
+      ],
     ];
     $join = \Drupal::service('plugin.manager.views.join')->createInstance('standard', $definition);
 
@@ -70,7 +70,7 @@ class StatisticsLastCommentName extends FieldPluginBase {
         '#theme' => 'username',
         '#account' => $account,
       ];
-      return drupal_render($username);
+      return \Drupal::service('renderer')->render($username);
     }
     else {
       return $this->sanitizeValue($this->getValue($values));

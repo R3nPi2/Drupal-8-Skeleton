@@ -19,7 +19,7 @@ class UrlHelper {
   /**
    * Parses an array into a valid, rawurlencoded query string.
    *
-   * rawurlencode() is RFC3986 compliant, and as a consequence RFC3987
+   * Function rawurlencode() is RFC3986 compliant, and as a consequence RFC3987
    * compliant. The latter defines the required format of "URLs" in HTML5.
    * urlencode() is almost the same as rawurlencode(), except that it encodes
    * spaces as "+" instead of "%20". This makes its result non compliant to
@@ -148,6 +148,11 @@ class UrlHelper {
     $scheme_delimiter_position = strpos($url, '://');
     $query_delimiter_position = strpos($url, '?');
     if ($scheme_delimiter_position !== FALSE && ($query_delimiter_position === FALSE || $scheme_delimiter_position < $query_delimiter_position)) {
+      // Split off the fragment, if any.
+      if (strpos($url, '#') !== FALSE) {
+        list($url, $options['fragment']) = explode('#', $url, 2);
+      }
+
       // Split off everything before the query string into 'path'.
       $parts = explode('?', $url);
 
@@ -158,12 +163,7 @@ class UrlHelper {
       }
       // If there is a query string, transform it into keyed query parameters.
       if (isset($parts[1])) {
-        $query_parts = explode('#', $parts[1]);
-        parse_str($query_parts[0], $options['query']);
-        // Take over the fragment, if there is any.
-        if (isset($query_parts[1])) {
-          $options['fragment'] = $query_parts[1];
-        }
+        parse_str($parts[1], $options['query']);
       }
     }
     // Internal URLs.
@@ -248,6 +248,16 @@ class UrlHelper {
    *   Exception thrown when a either $url or $bath_url are not fully qualified.
    */
   public static function externalIsLocal($url, $base_url) {
+    // Some browsers treat \ as / so normalize to forward slashes.
+    $url = str_replace('\\', '/', $url);
+
+    // Leading control characters may be ignored or mishandled by browsers, so
+    // assume such a path may lead to an non-local location. The \p{C} character
+    // class matches all UTF-8 control, unassigned, and private characters.
+    if (preg_match('/^\p{C}/u', $url) !== 0) {
+      return FALSE;
+    }
+
     $url_parts = parse_url($url);
     $base_parts = parse_url($base_url);
 

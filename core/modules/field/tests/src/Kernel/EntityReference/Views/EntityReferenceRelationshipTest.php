@@ -4,9 +4,9 @@ namespace Drupal\Tests\field\Kernel\EntityReference\Views;
 
 use Drupal\entity_test\Entity\EntityTestMulChanged;
 use Drupal\field\Entity\FieldStorageConfig;
-use Drupal\field\Tests\EntityReference\EntityReferenceTestTrait;
 use Drupal\entity_test\Entity\EntityTest;
 use Drupal\entity_test\Entity\EntityTestMul;
+use Drupal\Tests\field\Traits\EntityReferenceTestTrait;
 use Drupal\Tests\views\Kernel\ViewsKernelTestBase;
 use Drupal\views\Tests\ViewTestData;
 use Drupal\views\Views;
@@ -34,7 +34,7 @@ class EntityReferenceRelationshipTest extends ViewsKernelTestBase {
     'test_entity_reference_entity_test_mul_view',
     'test_entity_reference_reverse_entity_test_mul_view',
     'test_entity_reference_group_by_empty_relationships',
-  ];
+    ];
 
   /**
    * Modules to install.
@@ -67,7 +67,7 @@ class EntityReferenceRelationshipTest extends ViewsKernelTestBase {
     // Create reference from entity_test_mul to entity_test.
     $this->createEntityReferenceField('entity_test_mul', 'entity_test_mul', 'field_data_test', 'field_data_test', 'entity_test');
 
-    // Create another field for testing with a long name. So it's storage name
+    // Create another field for testing with a long name. So its storage name
     // will become hashed. Use entity_test_mul_changed, so the resulting field
     // tables created will be greater than 48 chars long.
     // @see \Drupal\Core\Entity\Sql\DefaultTableMapping::generateFieldTableName()
@@ -272,7 +272,7 @@ class EntityReferenceRelationshipTest extends ViewsKernelTestBase {
       $this->assertEqual($row->_entity->id(), $this->entities[$index]->id());
 
       // Test the forward relationship.
-      //$this->assertEqual($row->entity_test_entity_test_mul__field_data_test_id, 1);
+      // $this->assertEqual($row->entity_test_entity_test_mul__field_data_test_id, 1);
 
       // Test that the correct relationship entity is on the row.
       $this->assertEqual($row->_relationship_entities['field_test_data_with_a_long_name']->id(), 1);
@@ -331,6 +331,15 @@ class EntityReferenceRelationshipTest extends ViewsKernelTestBase {
     // Fourth result has no reference from EntityTestMul hence the output for
     // should be empty.
     $this->assertEqual('', $view->getStyle()->getField(3, 'name_2'));
+
+    $fields = $view->field;
+    // Check getValue for reference with a value. The first 3 rows reference
+    // EntityTestMul, so have value 'name1'.
+    $this->assertEquals('name1', $fields['name_2']->getValue($view->result[0]));
+    $this->assertEquals('name1', $fields['name_2']->getValue($view->result[1]));
+    $this->assertEquals('name1', $fields['name_2']->getValue($view->result[2]));
+    // Ensure getValue works on empty references.
+    $this->assertNull($fields['name_2']->getValue($view->result[3]));
   }
 
 }

@@ -2,7 +2,6 @@
 
 namespace Drupal\Core\Database\Driver\pgsql;
 
-use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Database\SchemaObjectExistsException;
 use Drupal\Core\Database\SchemaObjectDoesNotExistException;
 use Drupal\Core\Database\Schema as DatabaseSchema;
@@ -250,7 +249,8 @@ EOD;
     }
 
     $sql_keys = [];
-    if (isset($table['primary key']) && is_array($table['primary key'])) {
+    if (!empty($table['primary key']) && is_array($table['primary key'])) {
+      $this->ensureNotNullPrimaryKey($table['primary key'], $table['fields']);
       $sql_keys[] = 'CONSTRAINT ' . $this->ensureIdentifiersLength($name, '', 'pkey') . ' PRIMARY KEY (' . $this->createPrimaryKeySql($table['primary key']) . ')';
     }
     if (isset($table['unique keys']) && is_array($table['unique keys'])) {
@@ -297,9 +297,9 @@ EOD;
    * function it has to be processed by _db_process_field().
    *
    * @param $name
-   *    Name of the field.
+   *   Name of the field.
    * @param $spec
-   *    The field specification, as per the schema data structure format.
+   *   The field specification, as per the schema data structure format.
    */
   protected function createFieldSql($name, $spec) {
     // The PostgreSQL server converts names into lowercase, unless quoted.
@@ -350,7 +350,7 @@ EOD;
     // Set the correct database-engine specific datatype.
     // In case one is already provided, force it to lowercase.
     if (isset($field['pgsql_type'])) {
-      $field['pgsql_type'] = Unicode::strtolower($field['pgsql_type']);
+      $field['pgsql_type'] = mb_strtolower($field['pgsql_type']);
     }
     else {
       $map = $this->getFieldTypeMap();
@@ -358,7 +358,7 @@ EOD;
     }
 
     if (!empty($field['unsigned'])) {
-      // Unsigned datatypes are not supported in PostgreSQL 9.1. In MySQL,
+      // Unsigned data types are not supported in PostgreSQL 9.1. In MySQL,
       // they are used to ensure a positive number is inserted and it also
       // doubles the maximum integer size that can be stored in a field.
       // The PostgreSQL schema in Drupal creates a check constraint
@@ -383,8 +383,7 @@ EOD;
   }
 
   /**
-   * This maps a generic data type in combination with its data size
-   * to the engine-specific data type.
+   * {@inheritdoc}
    */
   public function getFieldTypeMap() {
     // Put :normal last so it gets preserved by array_flip. This makes
@@ -471,6 +470,9 @@ EOD;
     return (bool) $this->connection->query("SELECT 1 FROM pg_tables WHERE schemaname = :schema AND tablename = :table", [':schema' => $prefixInfo['schema'], ':table' => $prefixInfo['table']])->fetchField();
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function renameTable($table, $new_name) {
     if (!$this->tableExists($table)) {
       throw new SchemaObjectDoesNotExistException(t("Cannot rename @table to @table_new: table @table doesn't exist.", ['@table' => $table, '@table_new' => $new_name]));
@@ -525,6 +527,9 @@ EOD;
     $this->resetTableInformation($table);
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function dropTable($table) {
     if (!$this->tableExists($table)) {
       return FALSE;
@@ -535,6 +540,9 @@ EOD;
     return TRUE;
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function addField($table, $field, $spec, $new_keys = []) {
     if (!$this->tableExists($table)) {
       throw new SchemaObjectDoesNotExistException(t("Cannot add field @table.@field: table doesn't exist.", ['@field' => $field, '@table' => $table]));
@@ -544,7 +552,10 @@ EOD;
     }
 
     // Fields that are part of a PRIMARY KEY must be added as NOT NULL.
-    $is_primary_key = isset($keys_new['primary key']) && in_array($field, $keys_new['primary key'], TRUE);
+    $is_primary_key = isset($new_keys['primary key']) && in_array($field, $new_keys['primary key'], TRUE);
+    if ($is_primary_key) {
+      $this->ensureNotNullPrimaryKey($new_keys['primary key'], [$field => $spec]);
+    }
 
     $fixnull = FALSE;
     if (!empty($spec['not null']) && !isset($spec['default']) && !$is_primary_key) {
@@ -554,14 +565,22 @@ EOD;
     $query = 'ALTER TABLE {' . $table . '} ADD COLUMN ';
     $query .= $this->createFieldSql($field, $this->processField($spec));
     $this->connection->query($query);
-    if (isset($spec['initial'])) {
+    if (isset($spec['initial_from_field'])) {
+      if (isset($spec['initial'])) {
+        $expression = 'COALESCE(' . $spec['initial_from_field'] . ', :default_initial_value)';
+        $arguments = [':default_initial_value' => $spec['initial']];
+      }
+      else {
+        $expression = $spec['initial_from_field'];
+        $arguments = [];
+      }
       $this->connection->update($table)
-        ->fields([$field => $spec['initial']])
+        ->expression($field, $expression, $arguments)
         ->execute();
     }
-    if (isset($spec['initial_from_field'])) {
+    elseif (isset($spec['initial'])) {
       $this->connection->update($table)
-        ->expression($field, $spec['initial_from_field'])
+        ->fields([$field => $spec['initial']])
         ->execute();
     }
     if ($fixnull) {
@@ -583,6 +602,9 @@ EOD;
     $this->resetTableInformation($table);
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function dropField($table, $field) {
     if (!$this->fieldExists($table, $field)) {
       return FALSE;
@@ -593,6 +615,9 @@ EOD;
     return TRUE;
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function fieldSetDefault($table, $field, $default) {
     if (!$this->fieldExists($table, $field)) {
       throw new SchemaObjectDoesNotExistException(t("Cannot set default value of field @table.@field: field doesn't exist.", ['@table' => $table, '@field' => $field]));
@@ -603,6 +628,9 @@ EOD;
     $this->connection->query('ALTER TABLE {' . $table . '} ALTER COLUMN "' . $field . '" SET DEFAULT ' . $default);
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function fieldSetNoDefault($table, $field) {
     if (!$this->fieldExists($table, $field)) {
       throw new SchemaObjectDoesNotExistException(t("Cannot remove default value of field @table.@field: field doesn't exist.", ['@table' => $table, '@field' => $field]));
@@ -611,6 +639,18 @@ EOD;
     $this->connection->query('ALTER TABLE {' . $table . '} ALTER COLUMN "' . $field . '" DROP DEFAULT');
   }
 
+  /**
+   * {@inheritdoc}
+   */
+  public function fieldExists($table, $column) {
+    $prefixInfo = $this->getPrefixInfo($table);
+
+    return (bool) $this->connection->query("SELECT 1 FROM pg_attribute WHERE attrelid = :key::regclass AND attname = :column AND NOT attisdropped AND attnum > 0", [':key' => $prefixInfo['schema'] . '.' . $prefixInfo['table'], ':column' => $column])->fetchField();
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function indexExists($table, $name) {
     // Details http://www.postgresql.org/docs/9.1/interactive/view-pg-indexes.html
     $index_name = $this->ensureIdentifiersLength($table, $name, 'idx');
@@ -651,6 +691,9 @@ EOD;
     return (bool) $this->connection->query("SELECT 1 FROM pg_constraint WHERE conname = '$constraint_name'")->fetchField();
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function addPrimaryKey($table, $fields) {
     if (!$this->tableExists($table)) {
       throw new SchemaObjectDoesNotExistException(t("Cannot add primary key to table @table: table doesn't exist.", ['@table' => $table]));
@@ -663,6 +706,9 @@ EOD;
     $this->resetTableInformation($table);
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function dropPrimaryKey($table) {
     if (!$this->constraintExists($table, 'pkey')) {
       return FALSE;
@@ -673,6 +719,32 @@ EOD;
     return TRUE;
   }
 
+  /**
+   * {@inheritdoc}
+   */
+  protected function findPrimaryKeyColumns($table) {
+    if (!$this->tableExists($table)) {
+      return FALSE;
+    }
+
+    // Fetch the 'indkey' column from 'pg_index' to figure out the order of the
+    // primary key.
+    // @todo Use 'array_position()' to be able to perform the ordering in SQL
+    //   directly when 9.5 is the minimum  PostgreSQL version.
+    $result = $this->connection->query("SELECT a.attname, i.indkey FROM pg_index i JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = ANY(i.indkey) WHERE i.indrelid = '{" . $table . "}'::regclass AND i.indisprimary")->fetchAllKeyed();
+    if (!$result) {
+      return [];
+    }
+
+    $order = explode(' ', reset($result));
+    $columns = array_combine($order, array_keys($result));
+    ksort($columns);
+    return array_values($columns);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function addUniqueKey($table, $name, $fields) {
     if (!$this->tableExists($table)) {
       throw new SchemaObjectDoesNotExistException(t("Cannot add unique key @name to table @table: table doesn't exist.", ['@table' => $table, '@name' => $name]));
@@ -685,6 +757,9 @@ EOD;
     $this->resetTableInformation($table);
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function dropUniqueKey($table, $name) {
     if (!$this->constraintExists($table, $name . '__key')) {
       return FALSE;
@@ -710,6 +785,9 @@ EOD;
     $this->resetTableInformation($table);
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function dropIndex($table, $name) {
     if (!$this->indexExists($table, $name)) {
       return FALSE;
@@ -720,12 +798,18 @@ EOD;
     return TRUE;
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function changeField($table, $field, $field_new, $spec, $new_keys = []) {
     if (!$this->fieldExists($table, $field)) {
       throw new SchemaObjectDoesNotExistException(t("Cannot change the definition of field @table.@name: field doesn't exist.", ['@table' => $table, '@name' => $field]));
     }
     if (($field != $field_new) && $this->fieldExists($table, $field_new)) {
       throw new SchemaObjectExistsException(t("Cannot rename field @table.@name to @name_new: target field already exists.", ['@table' => $table, '@name' => $field, '@name_new' => $field_new]));
+    }
+    if (isset($new_keys['primary key']) && in_array($field_new, $new_keys['primary key'], TRUE)) {
+      $this->ensureNotNullPrimaryKey($new_keys['primary key'], [$field_new => $spec]);
     }
 
     $spec = $this->processField($spec);

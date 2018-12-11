@@ -35,7 +35,7 @@ class RendererPlaceholdersTest extends RendererTestBase {
   /**
    * Provides the two classes of placeholders: cacheable and uncacheable.
    *
-   * i.e. with or without #cache[keys].
+   * I.e. with or without #cache[keys].
    *
    * Also, different types:
    * - A) automatically generated placeholder
@@ -65,7 +65,7 @@ class RendererPlaceholdersTest extends RendererTestBase {
   public function providerPlaceholders() {
     $args = [$this->randomContextValue()];
 
-    $generate_placeholder_markup = function($cache_keys = NULL) use ($args) {
+    $generate_placeholder_markup = function ($cache_keys = NULL) use ($args) {
       $token_render_array = [
         '#lazy_builder' => ['Drupal\Tests\Core\Render\PlaceholdersTest::callback', $args],
       ];
@@ -547,12 +547,11 @@ class RendererPlaceholdersTest extends RendererTestBase {
 
   /**
    * @param false|array $cid_parts
-   * @param array $expected_data
-   *   FALSE if no render cache item is expected, a render array with the
-   *   expected values if a render cache item is expected.
    * @param string[] $bubbled_cache_contexts
    *   Additional cache contexts that were bubbled when the placeholder was
    *   rendered.
+   * @param array $expected_data
+   *   A render array with the expected values.
    */
   protected function assertPlaceholderRenderCache($cid_parts, array $bubbled_cache_contexts, array $expected_data) {
     if ($cid_parts !== FALSE) {
@@ -575,6 +574,7 @@ class RendererPlaceholdersTest extends RendererTestBase {
       $this->assertEquals($expected_data, $cached_element, 'The correct data is cached: the stored #markup and #attached properties are not affected by the placeholder being replaced.');
     }
   }
+
   /**
    * @covers ::render
    * @covers ::doRender
@@ -876,13 +876,16 @@ class RendererPlaceholdersTest extends RendererTestBase {
    */
   public function testScalarLazybuilderCallbackContext() {
     $element = [];
-    $element['#lazy_builder'] = ['\Drupal\Tests\Core\Render\PlaceholdersTest::callback', [
-      'string' => 'foo',
-      'bool' => TRUE,
-      'int' => 1337,
-      'float' => 3.14,
-      'null' => NULL,
-    ]];
+    $element['#lazy_builder'] = [
+      '\Drupal\Tests\Core\Render\PlaceholdersTest::callback',
+      [
+        'string' => 'foo',
+        'bool' => TRUE,
+        'int' => 1337,
+        'float' => 3.14,
+        'null' => NULL,
+      ],
+    ];
 
     $result = $this->renderer->renderRoot($element);
     $this->assertInstanceOf('\Drupal\Core\Render\Markup', $result);
@@ -895,15 +898,18 @@ class RendererPlaceholdersTest extends RendererTestBase {
    */
   public function testNonScalarLazybuilderCallbackContext() {
     $element = [];
-    $element['#lazy_builder'] = ['\Drupal\Tests\Core\Render\PlaceholdersTest::callback', [
-      'string' => 'foo',
-      'bool' => TRUE,
-      'int' => 1337,
-      'float' => 3.14,
-      'null' => NULL,
-      // array is not one of the scalar types.
-      'array' => ['hi!'],
-    ]];
+    $element['#lazy_builder'] = [
+      '\Drupal\Tests\Core\Render\PlaceholdersTest::callback',
+      [
+        'string' => 'foo',
+        'bool' => TRUE,
+        'int' => 1337,
+        'float' => 3.14,
+        'null' => NULL,
+        // array is not one of the scalar types.
+        'array' => ['hi!'],
+      ],
+    ];
 
     $this->setExpectedException(\DomainException::class, "A #lazy_builder callback's context may only contain scalar values or NULL.");
     $this->renderer->renderRoot($element);
@@ -996,7 +1002,7 @@ HTML;
     $this->assertSame($element['#attached']['drupalSettings'], $expected_js_settings, '#attached is modified; both the original JavaScript setting and the ones added by each placeholder #lazy_builder callback exist.');
 
     // GET request: validate cached data.
-    $cached_element = $this->memoryCache->get('simpletest:drupal_render:children_placeholders')->data;
+    $cached_element = $this->memoryCache->get('simpletest:renderer:children_placeholders')->data;
     $expected_element = [
       '#attached' => [
         'drupalSettings' => [
@@ -1066,7 +1072,7 @@ HTML;
     $test_element = [
       '#type' => 'details',
       '#cache' => [
-        'keys' => ['simpletest', 'drupal_render', 'children_placeholders'],
+        'keys' => ['simpletest', 'renderer', 'children_placeholders'],
       ],
       '#title' => 'Parent',
       '#attached' => [
@@ -1075,7 +1081,7 @@ HTML;
         ],
         'placeholders' => [
           'parent-x-parent' => [
-            '#lazy_builder' => [ __NAMESPACE__ . '\\PlaceholdersTest::callback', $args_1],
+            '#lazy_builder' => [__NAMESPACE__ . '\\PlaceholdersTest::callback', $args_1],
           ],
         ],
       ],
@@ -1119,7 +1125,7 @@ HTML;
 EOS;
         $output = str_replace([
           '{{ title }}',
-          '{{ children }}'
+          '{{ children }}',
         ], [$vars['#title'], $vars['#children']], $output);
         return $output;
       });

@@ -58,14 +58,6 @@ class NodeViewsData extends EntityViewsData {
     $data['node_field_data']['sticky']['filter']['type'] = 'yes-no';
     $data['node_field_data']['sticky']['sort']['help'] = $this->t('Whether or not the content is sticky. To list sticky content first, set this to descending.');
 
-    $data['node']['path'] = [
-      'field' => [
-        'title' => $this->t('Path'),
-        'help' => $this->t('The aliased path to this content.'),
-        'id' => 'node_path',
-      ],
-    ];
-
     $data['node']['node_bulk_form'] = [
       'title' => $this->t('Node operations bulk form'),
       'help' => $this->t('Add a form element that lets you run operations on multiple nodes.'),
@@ -224,6 +216,10 @@ class NodeViewsData extends EntityViewsData {
     $data['node_field_revision']['nid']['relationship']['base field'] = 'nid';
     $data['node_field_revision']['nid']['relationship']['title'] = $this->t('Content');
     $data['node_field_revision']['nid']['relationship']['label'] = $this->t('Get the actual content from a content revision.');
+    $data['node_field_revision']['nid']['relationship']['extra'][] = [
+      'field' => 'langcode',
+      'left_field' => 'langcode',
+    ];
 
     $data['node_field_revision']['vid'] = [
       'argument' => [
@@ -236,6 +232,12 @@ class NodeViewsData extends EntityViewsData {
         'base field' => 'vid',
         'title' => $this->t('Content'),
         'label' => $this->t('Get the actual content from a content revision.'),
+        'extra' => [
+          [
+            'field' => 'langcode',
+            'left_field' => 'langcode',
+          ],
+        ],
       ],
     ] + $data['node_field_revision']['vid'];
 
@@ -288,7 +290,7 @@ class NodeViewsData extends EntityViewsData {
 
     // Define the base group of this table. Fields that don't have a group defined
     // will go into this field by default.
-    $data['node_access']['table']['group']  = $this->t('Content access');
+    $data['node_access']['table']['group'] = $this->t('Content access');
 
     // For other base tables, explain how we join.
     $data['node_access']['table']['join'] = [
@@ -330,7 +332,7 @@ class NodeViewsData extends EntityViewsData {
             'field' => 'sid',
             'table' => 'search_index',
             'extra' => "node_search_index.type = 'node_search' AND node_search_index.langcode = node_field_data.langcode",
-          ]
+          ],
         ];
 
         $data['node_search_total']['table']['join'] = [

@@ -3,6 +3,7 @@
 namespace Drupal\Tests;
 
 use Behat\Mink\Exception\ExpectationException;
+use Behat\Mink\Exception\ResponseTextException;
 use Behat\Mink\WebAssert as MinkWebAssert;
 use Behat\Mink\Element\TraversableElement;
 use Behat\Mink\Exception\ElementNotFoundException;
@@ -115,7 +116,7 @@ class WebAssert extends MinkWebAssert {
     $container = $container ?: $this->session->getPage();
     $node = $container->find('named', [
       'select',
-      $this->session->getSelectorsHandler()->xpathLiteral($select),
+      $select,
     ]);
 
     if ($node === NULL) {
@@ -145,7 +146,7 @@ class WebAssert extends MinkWebAssert {
     $container = $container ?: $this->session->getPage();
     $select_field = $container->find('named', [
       'select',
-      $this->session->getSelectorsHandler()->xpathLiteral($select),
+      $select,
     ]);
 
     if ($select_field === NULL) {
@@ -155,7 +156,7 @@ class WebAssert extends MinkWebAssert {
     $option_field = $select_field->find('named', ['option', $option]);
 
     if ($option_field === NULL) {
-      throw new ElementNotFoundException($this->session, 'select', 'id|name|label|value', $option);
+      throw new ElementNotFoundException($this->session->getDriver(), 'select', 'id|name|label|value', $option);
     }
 
     return $option_field;
@@ -167,7 +168,7 @@ class WebAssert extends MinkWebAssert {
    * @param string $select
    *   One of id|name|label|value for the select field.
    * @param string $option
-   *   The option value that shoulkd not exist.
+   *   The option value that should not exist.
    * @param \Behat\Mink\Element\TraversableElement $container
    *   (optional) The document to check against. Defaults to the current page.
    *
@@ -178,7 +179,7 @@ class WebAssert extends MinkWebAssert {
     $container = $container ?: $this->session->getPage();
     $select_field = $container->find('named', [
       'select',
-      $this->session->getSelectorsHandler()->xpathLiteral($select),
+      $select,
     ]);
 
     if ($select_field === NULL) {
@@ -202,7 +203,7 @@ class WebAssert extends MinkWebAssert {
   public function titleEquals($expected_title) {
     $title_element = $this->session->getPage()->find('css', 'title');
     if (!$title_element) {
-      throw new ExpectationException('No title element found on the page', $this->session);
+      throw new ExpectationException('No title element found on the page', $this->session->getDriver());
     }
     $actual_title = $title_element->getText();
     $this->assert($expected_title === $actual_title, 'Title found');
@@ -232,6 +233,29 @@ class WebAssert extends MinkWebAssert {
   }
 
   /**
+   * Passes if a link with the exactly specified label is found.
+   *
+   * An optional link index may be passed.
+   *
+   * @param string $label
+   *   Text between the anchor tags.
+   * @param int $index
+   *   Link position counting from zero.
+   * @param string $message
+   *   (optional) A message to display with the assertion. Do not translate
+   *   messages: use strtr() to embed variables in the message text, not
+   *   t(). If left blank, a default message will be displayed.
+   *
+   * @throws \Behat\Mink\Exception\ExpectationException
+   *   Thrown when element doesn't exist, or the link label is a different one.
+   */
+  public function linkExistsExact($label, $index = 0, $message = '') {
+    $message = ($message ? $message : strtr('Link with label %label found.', ['%label' => $label]));
+    $links = $this->session->getPage()->findAll('named_exact', ['link', $label]);
+    $this->assert(!empty($links[$index]), $message);
+  }
+
+  /**
    * Passes if a link with the specified label is not found.
    *
    * An optional link index may be passed.
@@ -253,6 +277,27 @@ class WebAssert extends MinkWebAssert {
   }
 
   /**
+   * Passes if a link with the exactly specified label is not found.
+   *
+   * An optional link index may be passed.
+   *
+   * @param string $label
+   *   Text between the anchor tags.
+   * @param string $message
+   *   (optional) A message to display with the assertion. Do not translate
+   *   messages: use strtr() to embed variables in the message text, not
+   *   t(). If left blank, a default message will be displayed.
+   *
+   * @throws \Behat\Mink\Exception\ExpectationException
+   *   Thrown when element doesn't exist, or the link label is a different one.
+   */
+  public function linkNotExistsExact($label, $message = '') {
+    $message = ($message ? $message : strtr('Link with label %label not found.', ['%label' => $label]));
+    $links = $this->session->getPage()->findAll('named_exact', ['link', $label]);
+    $this->assert(empty($links), $message);
+  }
+
+  /**
    * Passes if a link containing a given href (part) is found.
    *
    * @param string $href
@@ -261,7 +306,7 @@ class WebAssert extends MinkWebAssert {
    *   Link position counting from zero.
    * @param string $message
    *   (optional) A message to display with the assertion. Do not translate
-   *   messages: use \Drupal\Component\Utility\SafeMarkup::format() to embed
+   *   messages: use \Drupal\Component\Render\FormattableMarkup to embed
    *   variables in the message text, not t(). If left blank, a default message
    *   will be displayed.
    *
@@ -282,7 +327,7 @@ class WebAssert extends MinkWebAssert {
    *   The full or partial value of the 'href' attribute of the anchor tag.
    * @param string $message
    *   (optional) A message to display with the assertion. Do not translate
-   *   messages: use \Drupal\Component\Utility\SafeMarkup::format() to embed
+   *   messages: use \Drupal\Component\Render\FormattableMarkup to embed
    *   variables in the message text, not t(). If left blank, a default message
    *   will be displayed.
    *
@@ -407,7 +452,7 @@ class WebAssert extends MinkWebAssert {
    * @throws \Behat\Mink\Exception\ElementNotFoundException
    * @throws \Behat\Mink\Exception\ExpectationException
    */
-  public function fieldDisabled($field, TraversableElement $container = NULL)  {
+  public function fieldDisabled($field, TraversableElement $container = NULL) {
     $container = $container ?: $this->session->getPage();
     $node = $container->findField($field);
 
@@ -444,7 +489,7 @@ class WebAssert extends MinkWebAssert {
   }
 
   /**
-   * Checks that specific hidden field does not exists.
+   * Checks that specific hidden field does not exist.
    *
    * @param string $field
    *   One of id|name|value for the hidden field.
@@ -499,6 +544,33 @@ class WebAssert extends MinkWebAssert {
     $regex = '/^' . preg_quote($value, '/') . '$/ui';
     $message = "The hidden field '$field' value is '$actual', but it should not be.";
     $this->assert(!preg_match($regex, $actual), $message);
+  }
+
+  /**
+   * Checks that current page contains text only once.
+   *
+   * @param string $text
+   *   The string to look for.
+   *
+   * @see \Behat\Mink\WebAssert::pageTextContains()
+   */
+  public function pageTextContainsOnce($text) {
+    $actual = $this->session->getPage()->getText();
+    $actual = preg_replace('/\s+/u', ' ', $actual);
+    $regex = '/' . preg_quote($text, '/') . '/ui';
+    $count = preg_match_all($regex, $actual);
+    if ($count === 1) {
+      return;
+    }
+
+    if ($count > 1) {
+      $message = sprintf('The text "%s" appears in the text of this page more than once, but it should not.', $text);
+    }
+    else {
+      $message = sprintf('The text "%s" was not found anywhere in the text of the current page.', $text);
+    }
+
+    throw new ResponseTextException($message, $this->session->getDriver());
   }
 
 }

@@ -32,7 +32,7 @@ class LinkItem extends FieldItemBase implements LinkItemInterface {
   public static function defaultFieldSettings() {
     return [
       'title' => DRUPAL_OPTIONAL,
-      'link_type' => LinkItemInterface::LINK_GENERIC
+      'link_type' => LinkItemInterface::LINK_GENERIC,
     ] + parent::defaultFieldSettings();
   }
 
@@ -135,7 +135,7 @@ class LinkItem extends FieldItemBase implements LinkItemInterface {
           $values['title'] = mt_rand(0, 1) ? $random->sentences(4) : '';
           break;
       }
-      $values['uri'] = 'http://www.' . $random->word($domain_length) . '.' . $tlds[mt_rand(0, (sizeof($tlds) - 1))];
+      $values['uri'] = 'http://www.' . $random->word($domain_length) . '.' . $tlds[mt_rand(0, (count($tlds) - 1))];
     }
     else {
       $values['uri'] = 'base:' . $random->name(mt_rand(1, 64));

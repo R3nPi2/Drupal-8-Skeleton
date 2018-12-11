@@ -38,7 +38,7 @@ class TaggedHandlersPassTest extends UnitTestCase {
     $handler_pass = new TaggedHandlersPass();
     $handler_pass->process($container);
 
-    $this->assertCount(1, $container->getDefinitions());
+    $this->assertCount(2, $container->getDefinitions());
     $this->assertFalse($container->getDefinition('consumer_id')->hasMethodCall('addHandler'));
   }
 
@@ -57,6 +57,25 @@ class TaggedHandlersPassTest extends UnitTestCase {
 
     $handler_pass = new TaggedHandlersPass();
     $this->setExpectedException(LogicException::class, "At least one service tagged with 'consumer_id' is required.");
+    $handler_pass->process($container);
+  }
+
+  /**
+   * Tests a required consumer with no handlers.
+   *
+   * @covers ::process
+   * @covers ::processServiceIdCollectorPass
+   */
+  public function testIdCollectorProcessRequiredHandlers() {
+    $this->setExpectedException(LogicException::class, "At least one service tagged with 'consumer_id' is required.");
+    $container = $this->buildContainer();
+    $container
+      ->register('consumer_id', __NAMESPACE__ . '\ValidConsumer')
+      ->addTag('service_id_collector', [
+        'required' => TRUE,
+      ]);
+
+    $handler_pass = new TaggedHandlersPass();
     $handler_pass->process($container);
   }
 
@@ -105,6 +124,32 @@ class TaggedHandlersPassTest extends UnitTestCase {
   }
 
   /**
+   * Tests one consumer and two handlers with service ID collection.
+   *
+   * @covers ::process
+   */
+  public function testserviceIdProcess() {
+    $container = $this->buildContainer();
+    $container
+      ->register('consumer_id', __NAMESPACE__ . '\ValidConsumer')
+      ->addTag('service_id_collector');
+
+    $container
+      ->register('handler1', __NAMESPACE__ . '\ValidHandler')
+      ->addTag('consumer_id');
+    $container
+      ->register('handler2', __NAMESPACE__ . '\ValidHandler')
+      ->addTag('consumer_id');
+
+    $handler_pass = new TaggedHandlersPass();
+    $handler_pass->process($container);
+
+    $arguments = $container->getDefinition('consumer_id')->getArguments();
+    $this->assertCount(1, $arguments);
+    $this->assertCount(2, $arguments[0]);
+  }
+
+  /**
    * Tests handler priority sorting.
    *
    * @covers ::process
@@ -133,6 +178,39 @@ class TaggedHandlersPassTest extends UnitTestCase {
     $this->assertEquals(10, $method_calls[0][1][1]);
     $this->assertEquals(new Reference('handler1'), $method_calls[1][1][0]);
     $this->assertEquals(0, $method_calls[1][1][1]);
+  }
+
+  /**
+   * Tests handler priority sorting for service ID collection.
+   *
+   * @covers ::process
+   */
+  public function testserviceIdProcessPriority() {
+    $container = $this->buildContainer();
+    $container
+      ->register('consumer_id', __NAMESPACE__ . '\ValidConsumer')
+      ->addTag('service_id_collector');
+
+    $container
+      ->register('handler1', __NAMESPACE__ . '\ValidHandler')
+      ->addTag('consumer_id');
+    $container
+      ->register('handler2', __NAMESPACE__ . '\ValidHandler')
+      ->addTag('consumer_id', [
+        'priority' => 20,
+      ]);
+    $container
+      ->register('handler3', __NAMESPACE__ . '\ValidHandler')
+      ->addTag('consumer_id', [
+        'priority' => 10,
+      ]);
+
+    $handler_pass = new TaggedHandlersPass();
+    $handler_pass->process($container);
+
+    $arguments = $container->getDefinition('consumer_id')->getArguments();
+    $this->assertCount(1, $arguments);
+    $this->assertSame(['handler2', 'handler3', 'handler1'], $arguments[0]);
   }
 
   /**
@@ -269,7 +347,7 @@ class TaggedHandlersPassTest extends UnitTestCase {
     $container
       ->register('consumer_id', __NAMESPACE__ . '\ValidConsumerWithExtraArguments')
       ->addTag('service_collector', [
-        'call' => 'addNoPriority'
+        'call' => 'addNoPriority',
       ]);
 
     $container
@@ -298,7 +376,7 @@ class TaggedHandlersPassTest extends UnitTestCase {
     $container
       ->register('consumer_id', __NAMESPACE__ . '\ValidConsumerWithExtraArguments')
       ->addTag('service_collector', [
-        'call' => 'addWithId'
+        'call' => 'addWithId',
       ]);
 
     $container
@@ -330,7 +408,7 @@ class TaggedHandlersPassTest extends UnitTestCase {
     $container
       ->register('consumer_id', __NAMESPACE__ . '\ValidConsumerWithExtraArguments')
       ->addTag('service_collector', [
-        'call' => 'addWithDifferentOrder'
+        'call' => 'addWithDifferentOrder',
       ]);
 
     $container
@@ -338,7 +416,7 @@ class TaggedHandlersPassTest extends UnitTestCase {
       ->addTag('consumer_id', [
         'priority' => 0,
         'extra1' => 'extra1',
-        'extra3' => 'extra3'
+        'extra3' => 'extra3',
       ]);
 
     $handler_pass = new TaggedHandlersPass();
@@ -355,26 +433,34 @@ class TaggedHandlersPassTest extends UnitTestCase {
 interface HandlerInterface {
 }
 class ValidConsumer {
+
   public function addHandler(HandlerInterface $instance, $priority = 0) {
   }
+
   public function addNoPriority(HandlerInterface $instance) {
   }
+
   public function addWithId(HandlerInterface $instance, $id, $priority = 0) {
   }
 
 }
 class InvalidConsumer {
+
   public function addHandler($instance, $priority = 0) {
   }
 
 }
 class ValidConsumerWithExtraArguments {
+
   public function addHandler(HandlerInterface $instance, $priority = 0, $extra1 = '', $extra2 = '') {
   }
+
   public function addNoPriority(HandlerInterface $instance, $extra) {
   }
+
   public function addWithId(HandlerInterface $instance, $id, $priority = 0, $extra1 = '', $extra2 = NULL) {
   }
+
   public function addWithDifferentOrder(HandlerInterface $instance, $extra1, $priority = 0, $extra2 = 'default2', $extra3 = 'default3') {
   }
 

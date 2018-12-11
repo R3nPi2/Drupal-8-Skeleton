@@ -2,12 +2,17 @@
 
 namespace Drupal\Core\Mail;
 
+use Drupal\Component\Render\MarkupInterface;
 use Drupal\Component\Render\PlainTextOutput;
+use Drupal\Component\Utility\Html;
+use Drupal\Component\Utility\Mail as MailHelper;
 use Drupal\Core\Logger\LoggerChannelFactoryInterface;
+use Drupal\Core\Messenger\MessengerTrait;
 use Drupal\Core\Plugin\DefaultPluginManager;
 use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Render\Markup;
 use Drupal\Core\Render\RenderContext;
 use Drupal\Core\Render\RendererInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
@@ -22,6 +27,7 @@ use Drupal\Core\StringTranslation\TranslationInterface;
  */
 class MailManager extends DefaultPluginManager implements MailManagerInterface {
 
+  use MessengerTrait;
   use StringTranslationTrait;
 
   /**
@@ -169,7 +175,7 @@ class MailManager extends DefaultPluginManager implements MailManagerInterface {
     // attachments. Therefore we perform mailing inside its own render context,
     // to ensure it doesn't leak into the render context for the HTTP response
     // to the current request.
-    return $this->renderer->executeInRenderContext(new RenderContext(), function() use ($module, $key, $to, $langcode, $params, $reply, $send) {
+    return $this->renderer->executeInRenderContext(new RenderContext(), function () use ($module, $key, $to, $langcode, $params, $reply, $send) {
       return $this->doMail($module, $key, $to, $langcode, $params, $reply, $send);
     });
   }
@@ -248,7 +254,8 @@ class MailManager extends DefaultPluginManager implements MailManagerInterface {
     // Return-Path headers should have a domain authorized to use the
     // originating SMTP server.
     $headers['Sender'] = $headers['Return-Path'] = $site_mail;
-    $headers['From'] = $site_config->get('name') . ' <' . $site_mail . '>';
+    // Make sure the site-name is a RFC-2822 compliant 'display-name'.
+    $headers['From'] = MailHelper::formatDisplayName($site_config->get('name')) . ' <' . $site_mail . '>';
     if ($reply) {
       $headers['Reply-to'] = $reply;
     }
@@ -268,6 +275,13 @@ class MailManager extends DefaultPluginManager implements MailManagerInterface {
 
     // Retrieve the responsible implementation for this message.
     $system = $this->getInstance(['module' => $module, 'key' => $key]);
+
+    // Attempt to convert relative URLs to absolute.
+    foreach ($message['body'] as &$body_part) {
+      if ($body_part instanceof MarkupInterface) {
+        $body_part = Markup::create(Html::transformRootRelativeUrlsToAbsolute((string) $body_part, \Drupal::request()->getSchemeAndHttpHost()));
+      }
+    }
 
     // Format the message body.
     $message = $system->format($message);
@@ -297,7 +311,7 @@ class MailManager extends DefaultPluginManager implements MailManagerInterface {
             '%to' => $message['to'],
             '%reply' => $message['reply-to'] ? $message['reply-to'] : $this->t('not set'),
           ]);
-          drupal_set_message($this->t('Unable to send email. Contact the site administrator if the problem persists.'), 'error');
+          $this->messenger()->addError($this->t('Unable to send email. Contact the site administrator if the problem persists.'));
         }
       }
     }

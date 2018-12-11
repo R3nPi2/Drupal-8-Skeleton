@@ -8,6 +8,7 @@ use Drupal\Tests\migrate\Unit\MigrateSqlSourceTestCase;
  * Tests the variable source plugin.
  *
  * @group migrate_drupal
+ * @group legacy
  */
 class i18nVariableTest extends MigrateSqlSourceTestCase {
 
@@ -43,7 +44,7 @@ class i18nVariableTest extends MigrateSqlSourceTestCase {
       'language' => 'mi',
       'site_slogan' => 'Ko whakamataku heke',
       'site_name' => 'ingoa_pae',
-    ]
+    ],
   ];
 
   /**

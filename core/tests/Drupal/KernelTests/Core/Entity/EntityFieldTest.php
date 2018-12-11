@@ -3,6 +3,7 @@
 namespace Drupal\KernelTests\Core\Entity;
 
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\EntityStorageException;
 use Drupal\Core\Entity\RevisionLogInterface;
 use Drupal\Core\Entity\TypedData\EntityDataDefinition;
 use Drupal\Core\Entity\TypedData\EntityDataDefinitionInterface;
@@ -16,6 +17,8 @@ use Drupal\Core\TypedData\DataDefinitionInterface;
 use Drupal\Core\TypedData\ListInterface;
 use Drupal\Core\TypedData\Type\StringInterface;
 use Drupal\Core\TypedData\TypedDataInterface;
+use Drupal\entity_test\Entity\EntityTest;
+use Drupal\entity_test\Entity\EntityTestComputedField;
 use Drupal\node\Entity\Node;
 use Drupal\node\Entity\NodeType;
 
@@ -471,30 +474,30 @@ class EntityFieldTest extends EntityKernelTestBase {
 
     // Make sure provided contextual information is right.
     $entity_adapter = $entity->getTypedData();
-    $this->assertIdentical($entity_adapter->getRoot(), $entity_adapter, 'Entity is root object.');
+    $this->assertSame($entity_adapter->getRoot(), $entity_adapter, 'Entity is root object.');
     $this->assertEqual($entity_adapter->getPropertyPath(), '');
     $this->assertEqual($entity_adapter->getName(), '');
     $this->assertEqual($entity_adapter->getParent(), NULL);
 
     $field = $entity->user_id;
-    $this->assertIdentical($field->getRoot()->getValue(), $entity, 'Entity is root object.');
-    $this->assertIdentical($field->getEntity(), $entity, 'getEntity() returns the entity.');
+    $this->assertSame($field->getRoot()->getValue(), $entity, 'Entity is root object.');
+    $this->assertSame($field->getEntity(), $entity, 'getEntity() returns the entity.');
     $this->assertEqual($field->getPropertyPath(), 'user_id');
     $this->assertEqual($field->getName(), 'user_id');
-    $this->assertIdentical($field->getParent()->getValue(), $entity, 'Parent object matches.');
+    $this->assertSame($field->getParent()->getValue(), $entity, 'Parent object matches.');
 
     $field_item = $field[0];
-    $this->assertIdentical($field_item->getRoot()->getValue(), $entity, 'Entity is root object.');
-    $this->assertIdentical($field_item->getEntity(), $entity, 'getEntity() returns the entity.');
+    $this->assertSame($field_item->getRoot()->getValue(), $entity, 'Entity is root object.');
+    $this->assertSame($field_item->getEntity(), $entity, 'getEntity() returns the entity.');
     $this->assertEqual($field_item->getPropertyPath(), 'user_id.0');
     $this->assertEqual($field_item->getName(), '0');
-    $this->assertIdentical($field_item->getParent(), $field, 'Parent object matches.');
+    $this->assertSame($field_item->getParent(), $field, 'Parent object matches.');
 
     $item_value = $field_item->get('entity');
-    $this->assertIdentical($item_value->getRoot()->getValue(), $entity, 'Entity is root object.');
+    $this->assertSame($item_value->getRoot()->getValue(), $entity, 'Entity is root object.');
     $this->assertEqual($item_value->getPropertyPath(), 'user_id.0.entity');
     $this->assertEqual($item_value->getName(), 'entity');
-    $this->assertIdentical($item_value->getParent(), $field_item, 'Parent object matches.');
+    $this->assertSame($item_value->getParent(), $field_item, 'Parent object matches.');
   }
 
   /**
@@ -738,6 +741,164 @@ class EntityFieldTest extends EntityKernelTestBase {
   }
 
   /**
+   * Tests all the interaction points of a computed field.
+   */
+  public function testComputedFields() {
+    $this->installEntitySchema('entity_test_computed_field');
+
+    \Drupal::state()->set('entity_test_computed_field_item_list_value', ['foo computed']);
+
+    // Check that the values are not computed unnecessarily during the lifecycle
+    // of an entity when the field is not interacted with directly.
+    \Drupal::state()->set('computed_test_field_execution', 0);
+    $entity = EntityTestComputedField::create([]);
+    $this->assertSame(0, \Drupal::state()->get('computed_test_field_execution', 0));
+
+    $entity->name->value = $this->randomString();
+    $this->assertSame(0, \Drupal::state()->get('computed_test_field_execution', 0));
+
+    $entity->save();
+    $this->assertSame(0, \Drupal::state()->get('computed_test_field_execution', 0));
+
+    // Test \Drupal\Core\TypedData\ComputedItemListTrait::getValue().
+    \Drupal::state()->set('computed_test_field_execution', 0);
+    $entity = EntityTestComputedField::create([]);
+    $this->assertSame([['value' => 'foo computed']], $entity->computed_string_field->getValue());
+
+    // Check that the values are only computed once.
+    $this->assertSame(1, \Drupal::state()->get('computed_test_field_execution', 0));
+
+    // Test \Drupal\Core\TypedData\ComputedItemListTrait::setValue(). This also
+    // checks that a subsequent getter does not try to re-compute the value.
+    \Drupal::state()->set('computed_test_field_execution', 0);
+    $entity = EntityTestComputedField::create([]);
+    $entity->computed_string_field->setValue([
+      ['value' => 'foo computed 1'],
+      ['value' => 'foo computed 2'],
+    ]);
+    $this->assertSame([['value' => 'foo computed 1'], ['value' => 'foo computed 2']], $entity->computed_string_field->getValue());
+
+    // Check that the values have not been computed when they were explicitly
+    // set.
+    $this->assertSame(0, \Drupal::state()->get('computed_test_field_execution', 0));
+
+    // Test \Drupal\Core\TypedData\ComputedItemListTrait::getString().
+    $entity = EntityTestComputedField::create([]);
+    $this->assertSame('foo computed', $entity->computed_string_field->getString());
+
+    // Test \Drupal\Core\TypedData\ComputedItemListTrait::get().
+    $entity = EntityTestComputedField::create([]);
+    $this->assertSame('foo computed', $entity->computed_string_field->get(0)->value);
+    $this->assertEmpty($entity->computed_string_field->get(1));
+
+    // Test \Drupal\Core\TypedData\ComputedItemListTrait::set().
+    $entity = EntityTestComputedField::create([]);
+    $entity->computed_string_field->set(1, 'foo computed 1');
+    $this->assertSame('foo computed', $entity->computed_string_field[0]->value);
+    $this->assertSame('foo computed 1', $entity->computed_string_field[1]->value);
+    $entity->computed_string_field->set(0, 'foo computed 0');
+    $this->assertSame('foo computed 0', $entity->computed_string_field[0]->value);
+    $this->assertSame('foo computed 1', $entity->computed_string_field[1]->value);
+
+    // Test \Drupal\Core\TypedData\ComputedItemListTrait::appendItem().
+    $entity = EntityTestComputedField::create([]);
+    $entity->computed_string_field->appendItem('foo computed 1');
+    $this->assertSame('foo computed', $entity->computed_string_field[0]->value);
+    $this->assertSame('foo computed 1', $entity->computed_string_field[1]->value);
+
+    // Test \Drupal\Core\TypedData\ComputedItemListTrait::removeItem().
+    $entity = EntityTestComputedField::create([]);
+    $entity->computed_string_field->removeItem(0);
+    $this->assertTrue($entity->computed_string_field->isEmpty());
+
+    // Test \Drupal\Core\TypedData\ComputedItemListTrait::isEmpty().
+    \Drupal::state()->set('entity_test_computed_field_item_list_value', []);
+    $entity = EntityTestComputedField::create([]);
+    $this->assertTrue($entity->computed_string_field->isEmpty());
+
+    \Drupal::state()->set('entity_test_computed_field_item_list_value', ['foo computed']);
+    $entity = EntityTestComputedField::create([]);
+    $this->assertFalse($entity->computed_string_field->isEmpty());
+
+    // Test \Drupal\Core\TypedData\ComputedItemListTrait::filter().
+    $filter_callback = function ($item) {
+      return !$item->isEmpty();
+    };
+    $entity = EntityTestComputedField::create([]);
+    $entity->computed_string_field->filter($filter_callback);
+    $this->assertCount(1, $entity->computed_string_field);
+
+    // Add an empty item to the list and check that it is filtered out.
+    $entity->computed_string_field->appendItem();
+    $entity->computed_string_field->filter($filter_callback);
+    $this->assertCount(1, $entity->computed_string_field);
+
+    // Add a non-empty item to the list and check that it is not filtered out.
+    $entity->computed_string_field->appendItem('foo computed 1');
+    $entity->computed_string_field->filter($filter_callback);
+    $this->assertCount(2, $entity->computed_string_field);
+
+    // Test \Drupal\Core\TypedData\ComputedItemListTrait::offsetExists().
+    $entity = EntityTestComputedField::create([]);
+    $this->assertTrue($entity->computed_string_field->offsetExists(0));
+    $this->assertFalse($entity->computed_string_field->offsetExists(1));
+
+    // Test \Drupal\Core\TypedData\ComputedItemListTrait::getIterator().
+    $entity = EntityTestComputedField::create([]);
+    foreach ($entity->computed_string_field as $delta => $item) {
+      $this->assertSame('foo computed', $item->value);
+    }
+
+    // Test \Drupal\Core\TypedData\ComputedItemListTrait::count().
+    $entity = EntityTestComputedField::create([]);
+    $this->assertCount(1, $entity->computed_string_field);
+
+    // Check that computed items are not auto-created when they have no values.
+    \Drupal::state()->set('entity_test_computed_field_item_list_value', []);
+    $entity = EntityTestComputedField::create([]);
+    $this->assertCount(0, $entity->computed_string_field);
+
+    // Test \Drupal\Core\Field\FieldItemList::equals() for a computed field.
+    \Drupal::state()->set('entity_test_computed_field_item_list_value', ['foo computed']);
+    $entity = EntityTestComputedField::create([]);
+    $computed_item_list1 = $entity->computed_string_field;
+
+    $entity = EntityTestComputedField::create([]);
+    $computed_item_list2 = $entity->computed_string_field;
+
+    $this->assertTrue($computed_item_list1->equals($computed_item_list2));
+
+    $computed_item_list2->value = 'foo computed 2';
+    $this->assertFalse($computed_item_list1->equals($computed_item_list2));
+  }
+
+  /**
+   * Tests an entity reference computed field.
+   */
+  public function testEntityReferenceComputedField() {
+    $this->installEntitySchema('entity_test_computed_field');
+
+    // Create 2 entities to be referenced.
+    $ref1 = EntityTest::create(['name' => 'foo', 'type' => 'bar']);
+    $ref1->save();
+    $ref2 = EntityTest::create(['name' => 'baz', 'type' => 'bar']);
+    $ref2->save();
+    \Drupal::state()->set('entity_test_reference_computed_target_ids', [$ref1->id(), $ref2->id()]);
+
+    $entity = EntityTestComputedField::create([]);
+    $entity->save();
+
+    /** @var \Drupal\entity_test\Plugin\Field\ComputedReferenceTestFieldItemList $field */
+    $field = $entity->get('computed_reference_field');
+    /** @var \Drupal\Core\Entity\EntityInterface[] $referenced_entities */
+    $referenced_entities = $field->referencedEntities();
+
+    // Check that ::referencedEntities() is working with computed fields.
+    $this->assertEquals($ref1->id(), $referenced_entities[0]->id());
+    $this->assertEquals($ref2->id(), $referenced_entities[1]->id());
+  }
+
+  /**
    * Executes the computed properties tests for the given entity type.
    *
    * @param string $entity_type
@@ -757,6 +918,35 @@ class EntityFieldTest extends EntityKernelTestBase {
       ->getStorage($entity_type)
       ->load($entity->id());
     $this->assertEqual($entity->field_test_text->processed, $target, format_string('%entity_type: Text is processed with the default filter.', ['%entity_type' => $entity_type]));
+  }
+
+  /**
+   * Tests explicit entity ID assignment.
+   */
+  public function testEntityIdAssignment() {
+    $entity_type = 'entity_test';
+    /** @var \Drupal\Core\Entity\ContentEntityStorageInterface $storage */
+    $storage = $this->container->get('entity_type.manager')->getStorage($entity_type);
+
+    // Check that an ID can be explicitly assigned on creation.
+    /** @var \Drupal\Core\Entity\ContentEntityInterface $entity */
+    $entity = $this->createTestEntity($entity_type);
+    $entity_id = 3;
+    $entity->set('id', $entity_id);
+    $this->assertSame($entity_id, $entity->id());
+    $storage->save($entity);
+    $entity = $storage->loadUnchanged($entity->id());
+    $this->assertTrue($entity);
+
+    // Check that an explicitly-assigned ID is preserved on update.
+    $storage->save($entity);
+    $entity = $storage->loadUnchanged($entity->id());
+    $this->assertTrue($entity);
+
+    // Check that an ID cannot be explicitly assigned on update.
+    $this->setExpectedException(EntityStorageException::class);
+    $entity->set('id', $entity_id + 1);
+    $storage->save($entity);
   }
 
 }

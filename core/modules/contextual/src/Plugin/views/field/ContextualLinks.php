@@ -130,15 +130,15 @@ class ContextualLinks extends FieldPluginBase {
           [],
           [
             'contextual-views-field-links' => UrlHelper::encodePath(Json::encode($links)),
-          ]
-        ]
+          ],
+        ],
       ];
 
       $element = [
         '#type' => 'contextual_links_placeholder',
         '#id' => _contextual_links_to_id($contextual_links),
       ];
-      return drupal_render($element);
+      return \Drupal::service('renderer')->render($element);
     }
     else {
       return '';
@@ -148,6 +148,6 @@ class ContextualLinks extends FieldPluginBase {
   /**
    * {@inheritdoc}
    */
-  public function query() { }
+  public function query() {}
 
 }

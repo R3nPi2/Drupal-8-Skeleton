@@ -21,9 +21,7 @@ use Drupal\Core\Url;
 class Rss extends StylePluginBase {
 
   /**
-   * Does the style plugin for itself support to add fields to it's output.
-   *
-   * @var bool
+   * {@inheritdoc}
    */
   protected $usesRowPlugin = TRUE;
 
@@ -100,7 +98,7 @@ class Rss extends StylePluginBase {
 
   public function render() {
     if (empty($this->view->rowPlugin)) {
-      debug('Drupal\views\Plugin\views\style\Rss: Missing row plugin');
+      trigger_error('Drupal\views\Plugin\views\style\Rss: Missing row plugin', E_WARNING);
       return [];
     }
     $rows = [];
