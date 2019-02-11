@@ -1,0 +1,36 @@
+<?php
+
+/**
+ * @file
+ * Installation actions for Twitter API Search.
+ */
+
+/**
+ * Implements hook_requirements().
+ */
+function twitter_api_search_requirements($phase) {
+  if ($phase != 'runtime') {
+    return [];
+  }
+
+  if (file_exists(DRUPAL_ROOT . '/vendor/j7mbo/twitter-api-php/TwitterAPIExchange.php')) {
+    $path = DRUPAL_ROOT . '/vendor/j7mbo/twitter-api-php/TwitterAPIExchange.php';
+  }
+  elseif (function_exists('libraries_get_path')) {
+    $path = libraries_get_path('twitter-api-php') . '/TwitterAPIExchange.php';
+  }
+  else {
+    $path = DRUPAL_ROOT . '/libraries/twitter-api-php/TwitterAPIExchange.php';
+  }
+
+  $exists = is_file($path);
+
+  return [
+    'twitter_api_search_library' => [
+      'title'       => t('twitter-api-php library'),
+      'description' => $exists ? '' : t('<a href=":url">twitter-api-php library</a> should be installed at <strong>/libraries/twitter-api-php/TwitterAPIExchange.php</strong>, or any path supported by libraries.module if installed.', [':url' => 'https://github.com/J7mbo/twitter-api-php']),
+      'severity'    => $exists ? REQUIREMENT_OK : REQUIREMENT_ERROR,
+      'value'       => $exists ? t('Installed') : t('Not installed'),
+    ],
+  ];
+}

@@ -1,0 +1,21 @@
+{
+  "name": "drupal/twitter_api_search",
+    "description": "Provides a block that shows embed tweets from Twitter API (1.1) Search",
+    "type": "drupal-module",
+    "homepage": "https://www.drupal.org/project/twitter_api_search",
+    "authors": [
+    {
+      "name": "R3n Pi2 <r3npi2@gmail.com>",
+      "homepage": "https://github.com/R3nPi2"
+    }
+    ],
+    "support": {
+      "issues": "https://www.drupal.org/project/issues/twitter_api_search",
+      "source": "https://cgit.drupalcode.org/twitter_api_search"
+    },
+    "license": "GPL-2.0-or-later",
+    "minimum-stability": "dev",
+    "require": {
+      "j7mbo/twitter-api-php": "^1.0"
+    }
+}

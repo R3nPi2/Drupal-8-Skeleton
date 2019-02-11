@@ -1,0 +1,83 @@
+<?php
+
+/**
+ * @file
+ * Twitter API Search module file.
+ */
+
+ use Drupal\Core\Routing\RouteMatchInterface;
+
+/**
+ * Implements hook_theme().
+ */
+function twitter_api_search_theme() {
+
+  return [
+    'twitter_api_search_block' => [
+      'variables' => [
+        'title' => 'Twitter API Search',
+        'description' => NULL,
+        'tweets' => NULL,
+        'account' => NULL,
+        'header' => NULL,
+        'limit' => NULL,
+        'show_media' => NULL,
+        'show_retweets' => NULL,
+        'link_color' => NULL,
+        'card_max_width' => NULL,
+        'max_height' => NULL,
+        'module_path' => '/' . drupal_get_path('module', 'twitter_api_search'),
+      ],
+      'template' => 'block--twitter-api-search',
+    ],
+  ];
+
+}
+
+/**
+ * Implements hook_help().
+ */
+function twitter_api_search_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+
+    case 'help.page.twitter_api_search':
+
+      $output = '<h3 id="introduction">INTRODUCTION</h3>
+<p><strong>Twitter API Search</strong> module provides a block that will show embed tweets resulting from a Twitter API v1.1 Search query.</p>
+<p>If you are not familiar with <em>Twitter API</em>, go to <a href="https://developer.twitter.com/en/docs/tweets/search/overview/standard">https://developer.twitter.com/en/docs/tweets/search/overview/standard</a>.</p>
+<p>You will need a Twitter <a href="https://developer.twitter.com/en/dashboard"><em>a developer account</em></a> and <a href="https://developer.twitter.com/en/apps"><em>a registered app</em></a> and configure your <a href="https://developer.twitter.com/en/docs/basics/authentication/guides/access-tokens.html"><em>Twitter App credentials</em></a>.</p>
+<h3 id="requirements">REQUIREMENTS</h3>
+<p>External library <a href="https://github.com/J7mbo/twitter-api-php">twitter-api-php</a> is required by this module.
+If you install it with <code>composer</code>, the library will be auto-intalled, but if you install this module manually make shure that file <code>libraries/twitter-api-php/TwitterAPIExchange.php</code> exists.</p>
+<h3 id="installation">INSTALLATION</h3>
+<ol>
+<li>
+<p>Require or download <em>Twitter API Search</em> module <a href="https://www.drupal.org/docs/develop/using-composer/using-composer-to-manage-drupal-site-dependencies">using Composer to manage Drupal site dependencies</a>__, which will also download the required <a href="https://github.com/J7mbo/twitter-api-php">twitter-api-php</a> dependency library. If not, you will have to install the library manually and place it in <code>libraries/twitter-api-php/TwitterAPIExchange.php</code>.</p>
+<p>To install with composer, simply run the following command from your project package root (where the main composer.json file is sited):
+<code>composer require \'drupal/twitter_api_search\'</code></p>
+</li>
+<li>
+<p>Enable the module.</p>
+</li>
+</ol>
+<h3 id="configuration">CONFIGURATION</h3>
+<ol>
+<li>
+<p>Configure Twitterp App credentials going to <em>Configuration &gt;&gt; System &gt;&gt; Twitter API</em> or <em>/admin/config/system/twitter-api-search</em>.</p>
+<p>To get this credentials you will need a Twitter <a href="https://developer.twitter.com/en/dashboard"><em>developer account</em></a>, <a href="https://developer.twitter.com/en/apps"><em>a registered app</em></a> and configure your <a href="https://developer.twitter.com/en/docs/basics/authentication/guides/access-tokens.html"><em>Twitter App credentials</em></a>.</p>
+</li>
+<li>
+<p>Go to <em>Structure &gt;&gt; Block layout</em> , place a <em>Twitter API Search block</em> and set custom block configuration settings.</p>
+</li>
+</ol>
+<h4 id="author">AUTHOR</h4>
+<ul>
+<li><a href="https://github.com/R3nPi2">R3n Pi2</a></li>
+</ul>';
+
+      return $output;
+
+    default:
+
+  }
+}

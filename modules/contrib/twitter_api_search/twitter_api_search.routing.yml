@@ -1,0 +1,9 @@
+twitter_api_search.settings:
+  path: '/admin/config/system/twitter-api-search'  
+  defaults:  
+    _form: '\Drupal\twitter_api_search\Form\TwitterApiSearchForm'  
+    _title: 'Twitter API Configuration'  
+  requirements:  
+    _permission: 'administer site configuration'
+  options:  
+    _admin_route: TRUE  

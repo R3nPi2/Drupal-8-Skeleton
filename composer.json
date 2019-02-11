@@ -15,7 +15,8 @@
         "cweagans/composer-patches": "^1.6.4",
         "oomphinc/composer-installers-extender": "^1.1",
         "wikimedia/composer-merge-plugin": "^1.4.1",
-        "drupal/core": "^8.3.4"
+        "drupal/core": "^8.3.4",
+        "drupal/twitter_api_search": "^1.4"
     },
     "require-dev": {},
     "extra": {

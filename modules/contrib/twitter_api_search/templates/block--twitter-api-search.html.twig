@@ -1,0 +1,22 @@
+{#
+/**
+ * @file
+ * embed_twitter_search block.
+ */
+#}
+
+<div class="twitter-api-search--block">
+    <div class="tweets-about">
+        {{ header|raw }}
+    </div>
+    <div class="tweets-wrapper" style="max-height: {{ max_height }}">
+        {% for tweet in tweets %}
+            <div class="tweet-wrapper">
+                {{ tweet | raw }}
+            </div>
+        {% endfor %}
+    </div>
+    <div class="twitter-follow-us">
+        <a href="https://twitter.com/{{ account }}" target="_blank">{{ 'Follow us'|t }}</a>
+    </div>
+</div>

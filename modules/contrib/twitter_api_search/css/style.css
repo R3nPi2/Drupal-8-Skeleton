@@ -1,0 +1,11 @@
+.twitter-api-search--block .tweets-wrapper {
+  overflow: auto;
+}
+
+.twitter-api-search--block .tweets-wrapper::-webkit-scrollbar {
+  display: none;
+}
+
+.twitter-api-search--block .twitter-tweet {
+  margin: auto;
+}
