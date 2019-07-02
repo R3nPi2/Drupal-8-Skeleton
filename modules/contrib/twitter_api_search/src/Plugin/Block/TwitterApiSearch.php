@@ -136,6 +136,18 @@ class TwitterApiSearch extends BlockBase implements ContainerFactoryPluginInterf
     $url = 'https://api.twitter.com/1.1/search/tweets.json';
     $getfield = '?count=' . $config['limit'] . '&q=' . urlencode($config['search_string']);
 
+    if (isset($config['twitter_parameters']) && !empty($config['twitter_parameters'])) {
+      $twitter_parameters = unserialize($config['twitter_parameters']);  
+
+      foreach ($twitter_parameters as $parameter) {
+        if (empty($parameter['name']) || empty($parameter['value'])) {
+          continue;
+        }
+
+        $getfield .= '&' . $parameter['name'] . '=' . $parameter['value'];
+      }
+    }
+
     if ($config['show_retweets'] == 'hide') {
       $getfield .= '%20-filter:nativeretweets';
     }
@@ -255,8 +267,111 @@ class TwitterApiSearch extends BlockBase implements ContainerFactoryPluginInterf
       '#default_value' => isset($config['link_color']) ? $config['link_color'] : '',
     ];
 
+    $form['twitter_parameters'] = [
+      '#type' => 'fieldset',
+      '#title' => $this->t('Twitter Search API Parameters'),
+      '#prefix' => '<div id="twitter-parameters-container-wrapper">',
+      '#suffix' => '</div>',
+    ];
+
+    $form['twitter_parameters']['items'] = [
+      '#type' => 'container',
+      '#tree' => TRUE
+    ];
+
+    if (!$form_state->has('twitter_parameters')) {
+      $twitter_parameters = isset($config['twitter_parameters']) && !empty($config['twitter_parameters']) ? unserialize($config['twitter_parameters']) : [];
+      $form_state->set('twitter_parameters', count($twitter_parameters));
+    }
+
+    $twitter_parameters_num = $form_state->get('twitter_parameters');
+
+    for ($i = 0; $i < $twitter_parameters_num; $i++) {
+      $form['twitter_parameters']['items'][$i] = [
+        '#type' => 'container',
+        '#attributes' => ['class' => ['container-inline']]
+      ];
+
+      $form['twitter_parameters']['items'][$i]['name'] = [
+        '#type' => 'textfield',
+        '#title' => t('Name'),
+        '#default_value' => isset($twitter_parameters[$i]['name']) ? $twitter_parameters[$i]['name'] : ''
+      ];
+
+      $form['twitter_parameters']['items'][$i]['value'] = [
+        '#type' => 'textfield',
+        '#title' => t('Value'),
+        '#default_value' => isset($twitter_parameters[$i]['value']) ? $twitter_parameters[$i]['value'] : ''
+      ];
+    }
+
+    $form['twitter_parameters']['actions'] = [
+      '#type' => 'actions',
+    ];
+
+    $form['twitter_parameters']['actions']['add_item'] = [
+      '#type' => 'submit',
+      '#value' => t('Add'),
+      '#submit' => [[$this, 'addParameter']],
+      '#ajax' => [
+        'callback' => [$this, 'addParameterCallback'],
+        'wrapper' => 'twitter-parameters-container-wrapper',
+      ],
+    ];
+
+    if ($twitter_parameters_num > 0) {
+      $form['twitter_parameters']['actions']['remove_item'] = [
+        '#type' => 'submit',
+        '#value' => t('Remove'),
+        '#submit' => [[$this, 'removeParameterCallback']],
+        '#ajax' => [
+          'callback' => [$this, 'addParameterCallback'],
+          'wrapper' => 'twitter-parameters-container-wrapper',
+        ]
+      ];
+    }
+
     return $form;
   }
+
+
+  /**
+   * @param array $form
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   */
+  public function addParameter(array &$form, FormStateInterface $form_state) {
+    $twitter_parameters = $form_state->get('twitter_parameters');
+    $add_button = $twitter_parameters + 1;
+    $form_state->set('twitter_parameters', $add_button);
+    $form_state->setRebuild();
+  }
+
+
+  /**
+   * @param array $form
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   * @return mixed
+   */
+  public function addParameterCallback(array &$form, FormStateInterface $form_state) {
+    // The form passed here is the entire form, not the subform that is
+    // passed to non-AJAX callback.
+    return $form['settings']['twitter_parameters'];
+  }
+
+
+  /**
+   * @param array $form
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   */
+  public function removeParameterCallback(array &$form, FormStateInterface $form_state) {
+    $twitter_parameters = $form_state->get('twitter_parameters');
+    if ($twitter_parameters >= 1) {
+      $remove_button = $twitter_parameters - 1;
+      $form_state->set('twitter_parameters', $remove_button);
+    }
+    $form_state->setRebuild();
+  }
+
 
   /**
    * {@inheritdoc}
@@ -275,7 +390,7 @@ class TwitterApiSearch extends BlockBase implements ContainerFactoryPluginInterf
     $this->configuration['max_height'] = $values['max_height'];
     $this->configuration['card_max_width'] = $values['card_max_width'];
     $this->configuration['link_color'] = $values['link_color'];
-
+    $this->configuration['twitter_parameters'] = !empty($values['twitter_parameters']['items']) ? serialize($values['twitter_parameters']['items']) : [];
   }
 
 }

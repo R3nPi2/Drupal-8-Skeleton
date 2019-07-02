@@ -16,6 +16,10 @@ use Drupal\Core\Utility\Error;
  * Disables any extensions that are incompatible with the current core version.
  */
 function update_fix_compatibility() {
+  // Fix extension objects if the update is being done via Drush 8. In non-Drush
+  // environments this will already be fixed by the UpdateKernel this point.
+  UpdateKernel::fixSerializedExtensionObjects(\Drupal::getContainer());
+
   $extension_config = \Drupal::configFactory()->getEditable('core.extension');
   $save = FALSE;
   foreach (['module', 'theme'] as $type) {
@@ -30,10 +34,6 @@ function update_fix_compatibility() {
     $extension_config->set('module', module_config_sort($extension_config->get('module')));
     $extension_config->save();
   }
-
-  // Fix extension objects if the update is being done via Drush 8. In non-Drush
-  // environments this will already be fixed by the UpdateKernel this point.
-  UpdateKernel::fixSerializedExtensionObjects(\Drupal::getContainer());
 }
 
 /**
@@ -117,10 +117,11 @@ function update_check_requirements() {
  */
 function update_set_schema($module, $schema_version) {
   \Drupal::keyValue('system.schema')->set($module, $schema_version);
-  // system_list_reset() is in module.inc but that would only be available
-  // once the variable bootstrap is done.
-  require_once __DIR__ . '/module.inc';
-  system_list_reset();
+  \Drupal::service('extension.list.profile')->reset();
+  \Drupal::service('extension.list.module')->reset();
+  \Drupal::service('extension.list.theme_engine')->reset();
+  \Drupal::service('extension.list.theme')->reset();
+  drupal_static_reset('drupal_get_installed_schema_version');
 }
 
 /**
