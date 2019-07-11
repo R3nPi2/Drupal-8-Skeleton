@@ -7,7 +7,7 @@ author: r3npi2@gmail.com
 configure: twitter_api_search.settings
 
 # Information added by Drupal.org packaging script on 2019-07-02
-version: '8.x-1.6'
+version: '8.x-1.7'
 core: '8.x'
 project: 'twitter_api_search'
-datestamp: 1562051587
+datestamp: 1562054288

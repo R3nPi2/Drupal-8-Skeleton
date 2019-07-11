@@ -137,7 +137,7 @@ class TwitterApiSearch extends BlockBase implements ContainerFactoryPluginInterf
     $getfield = '?count=' . $config['limit'] . '&q=' . urlencode($config['search_string']);
 
     if (isset($config['twitter_parameters']) && !empty($config['twitter_parameters'])) {
-      $twitter_parameters = unserialize($config['twitter_parameters']);  
+      $twitter_parameters = unserialize($config['twitter_parameters']);
 
       foreach ($twitter_parameters as $parameter) {
         if (empty($parameter['name']) || empty($parameter['value'])) {
