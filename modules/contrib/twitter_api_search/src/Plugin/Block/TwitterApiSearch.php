@@ -166,6 +166,10 @@ class TwitterApiSearch extends BlockBase implements ContainerFactoryPluginInterf
     $card_max_width = $config['card_max_width'];
     $tweets = [];
 
+    if (!isset($response->statuses)) {
+      return;
+    }
+
     foreach ($response->statuses as $status) {
 
       $tweetUrl = 'https://twitter.com/' . $status->user->screen_name . '/status/' . $status->id;

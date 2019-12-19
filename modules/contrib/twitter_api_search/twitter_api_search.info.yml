@@ -1,13 +1,12 @@
 name: Twitter API Search
 type: module
 description: This module provides a block that embeds a list of tweets from a Twitter API (1.1) Search.
-# core: 8.x  
+core: 8.x  
 package: Twitter
 author: r3npi2@gmail.com
 configure: twitter_api_search.settings
 
-# Information added by Drupal.org packaging script on 2019-07-02
-version: '8.x-1.7'
-core: '8.x'
+# Information added by Drupal.org packaging script on 2019-09-26
+version: '8.x-1.8'
 project: 'twitter_api_search'
-datestamp: 1562054288
+datestamp: 1569490387
