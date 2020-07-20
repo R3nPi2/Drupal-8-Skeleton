@@ -236,7 +236,9 @@ class ConfigEntityTest extends BrowserTestBase {
    * Tests CRUD operations through the UI.
    */
   public function testCRUDUI() {
-    $this->drupalLogin($this->drupalCreateUser(['administer site configuration']));
+    $this->drupalLogin($this->drupalCreateUser([
+      'administer site configuration',
+    ]));
 
     $id = strtolower($this->randomMachineName());
     $label1 = $this->randomMachineName();
@@ -253,7 +255,7 @@ class ConfigEntityTest extends BrowserTestBase {
     ];
     $this->drupalPostForm('admin/structure/config_test/add', $edit, 'Save');
     $this->assertUrl('admin/structure/config_test');
-    $this->assertResponse(200);
+    $this->assertSession()->statusCodeEquals(200);
     $this->assertRaw($message_insert);
     $this->assertNoRaw($message_update);
     $this->assertLinkByHref("admin/structure/config_test/manage/$id");
@@ -264,7 +266,7 @@ class ConfigEntityTest extends BrowserTestBase {
     ];
     $this->drupalPostForm("admin/structure/config_test/manage/$id", $edit, 'Save');
     $this->assertUrl('admin/structure/config_test');
-    $this->assertResponse(200);
+    $this->assertSession()->statusCodeEquals(200);
     $this->assertNoRaw($message_insert);
     $this->assertRaw($message_update);
     $this->assertLinkByHref("admin/structure/config_test/manage/$id");
@@ -276,7 +278,7 @@ class ConfigEntityTest extends BrowserTestBase {
     $this->assertUrl("admin/structure/config_test/manage/$id/delete");
     $this->drupalPostForm(NULL, [], 'Delete');
     $this->assertUrl('admin/structure/config_test');
-    $this->assertResponse(200);
+    $this->assertSession()->statusCodeEquals(200);
     $this->assertNoRaw($message_update);
     $this->assertRaw($message_delete);
     $this->assertNoText($label1);
@@ -289,7 +291,7 @@ class ConfigEntityTest extends BrowserTestBase {
     ];
     $this->drupalPostForm('admin/structure/config_test/add', $edit, 'Save');
     $this->assertUrl('admin/structure/config_test');
-    $this->assertResponse(200);
+    $this->assertSession()->statusCodeEquals(200);
     $this->assertText($label1);
     $this->assertLinkByHref("admin/structure/config_test/manage/$id");
 
@@ -300,7 +302,7 @@ class ConfigEntityTest extends BrowserTestBase {
     ];
     $this->drupalPostForm("admin/structure/config_test/manage/$id", $edit, 'Save');
     $this->assertUrl('admin/structure/config_test');
-    $this->assertResponse(200);
+    $this->assertSession()->statusCodeEquals(200);
     $this->assertNoText($label1);
     $this->assertNoText($label2);
     $this->assertText($label3);
@@ -314,7 +316,7 @@ class ConfigEntityTest extends BrowserTestBase {
       'label' => '0',
     ];
     $this->drupalPostForm('admin/structure/config_test/add', $edit, 'Save');
-    $this->assertResponse(200);
+    $this->assertSession()->statusCodeEquals(200);
     $message_insert = new FormattableMarkup('%label configuration has been created.', ['%label' => $edit['label']]);
     $this->assertRaw($message_insert);
     $this->assertLinkByHref('admin/structure/config_test/manage/0');
